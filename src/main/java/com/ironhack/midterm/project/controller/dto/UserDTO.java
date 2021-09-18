@@ -4,7 +4,6 @@ import com.ironhack.midterm.project.classes.Address;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Pattern;
-import java.time.LocalDate;
 
 public class UserDTO {
     @NotBlank(message = "Name cannot be blank")

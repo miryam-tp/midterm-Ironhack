@@ -123,6 +123,12 @@ class AccountControllerImplTest {
         assertTrue(mvcResult.getResponse().getContentAsString(StandardCharsets.UTF_8).contains("Lucas Sánchez"));
     }
 
+    //TODO: Test de store con CreditCard
+
+    //TODO: Test de store con Savings
+
+    //TODO: Test de store con Checking con usuario menor de 24 años
+
     @Test
     void updateBalance_ValidBalance_StatusNoContent() throws Exception {
         BalanceDTO balanceDTO = new BalanceDTO();
@@ -141,7 +147,7 @@ class AccountControllerImplTest {
     @Test
     void updateBalance_InvalidBalance_StatusBadRequest() throws Exception {
         BalanceDTO balanceDTO = new BalanceDTO();
-        balanceDTO.setAmount(new BigDecimal("-100.35"));
+        balanceDTO.setAmount(new BigDecimal("-100.35"));  //Al poner validación en el DTO a lo mejor esto da error ahora, cuidado
         String body = objectMapper.writeValueAsString(balanceDTO);
 
         mockMvc.perform(put("/accounts/2")
@@ -163,4 +169,6 @@ class AccountControllerImplTest {
         )
                 .andExpect(status().isNotFound());
     }
+
+    //TODO: Tests receiveOrTransferMoney
 }

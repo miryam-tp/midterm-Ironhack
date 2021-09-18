@@ -4,6 +4,7 @@ import com.ironhack.midterm.project.classes.InterestRate;
 import com.ironhack.midterm.project.classes.Money;
 import com.ironhack.midterm.project.controller.dto.AccountDTO;
 import com.ironhack.midterm.project.controller.dto.BalanceDTO;
+import com.ironhack.midterm.project.controller.dto.TransferDTO;
 import com.ironhack.midterm.project.enums.Status;
 import com.ironhack.midterm.project.model.account.*;
 import com.ironhack.midterm.project.model.users.AccountHolder;
@@ -16,6 +17,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Optional;
 
 @Service
 public class AccountServiceImpl implements AccountService {
@@ -37,6 +39,9 @@ public class AccountServiceImpl implements AccountService {
 
     @Autowired
     private AccountHolderRepository accountHolderRepository;
+
+    @Autowired
+    private ThirdPartyRepository thirdPartyRepository;
 
     public Account store(AccountDTO accountDto) {
         if(accountDto.getBalance() == null || accountDto.getPrimaryOwner() == null)
@@ -179,6 +184,78 @@ public class AccountServiceImpl implements AccountService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "New balance cannot be negative");
         account.setBalance(new Money(balanceAmount));
         accountRepository.save(account);
+    }
+
+    public void receiveOrTransferMoney(Optional<String> optionalHashedKey, TransferDTO transferDto) {
+        //Check if hashed key exists in the request
+        String hashedKey = optionalHashedKey
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Must provide hashed key in header"));
+
+        //Check if third party user exists
+        thirdPartyRepository.findByHashedKey(hashedKey)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Third party user with hashed key " + hashedKey + " does not exist"));
+
+        Account account = accountRepository.findById(transferDto.getTargetAccount())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find target account"));
+
+        //TODO: Implement Credit Card handling
+//        if(account instanceof CreditCard)
+//            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY);
+
+        if(account instanceof Savings) {
+            Savings savings = savingsRepository.findById(account.getId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+            //Check if secret key is valid
+            if(savings.getSecretKey() != transferDto.getSecretKey())
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Secret key is not valid");
+
+            //Calculate new balance after transaction
+            //If amount is negative, the third party receives money
+            //If amount is positive, the third party transfers money
+            Money newBalance = new Money(savings.getBalance().getAmount().add(transferDto.getAmount()));
+
+            //Check if balance is lower than minimum balance after transaction
+            if(savings.getMinimumBalance().getAmount().compareTo(newBalance.getAmount()) > 0)
+                newBalance = new Money(newBalance.getAmount().subtract(savings.getPenaltyFee().getAmount()));  //Apply penalty fee
+
+            //Set balance after transaction
+            savings.setBalance(newBalance);
+            savingsRepository.save(savings);
+        }
+        else if(account instanceof CheckingAccount) {
+            CheckingAccount checkingAccount = checkingAccountRepository.findById(account.getId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+            //Check if secret key is valid
+            if(checkingAccount.getSecretKey() != transferDto.getSecretKey())
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Secret key is not valid");
+
+            //Calculate new balance after transaction
+            //If amount is negative, third party receives money
+            //If amount is positive, third party transfers money
+            Money newBalance = new Money(checkingAccount.getBalance().getAmount().add(transferDto.getAmount()));
+
+            //Check if balance is lower than minimum balance after transaction
+            if(checkingAccount.getMinimumBalance().getAmount().compareTo(newBalance.getAmount()) > 0)
+                newBalance = new Money(newBalance.getAmount().subtract(checkingAccount.getPenaltyFee().getAmount()));  //Apply penalty fee
+
+            checkingAccount.setBalance(newBalance);
+            checkingAccountRepository.save(checkingAccount);
+        }
+        else if(account instanceof StudentChecking) {
+            StudentChecking studentChecking = studentCheckingRepository.findById(account.getId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+            //Check if secret key is valid
+            if(studentChecking.getSecretKey() != transferDto.getSecretKey())
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Secret key is not valid");
+
+            //Calculate new balance after transaction
+            //If amount is negative, third party receives money
+            //If amount is positive, third party transfers money
+            Money newBalance = new Money(studentChecking.getBalance().getAmount().add(transferDto.getAmount()));
+
+            studentChecking.setBalance(newBalance);
+            studentCheckingRepository.save(studentChecking);
+        }
     }
 
 

@@ -2,6 +2,7 @@ package com.ironhack.midterm.project.controller.impl;
 
 import com.ironhack.midterm.project.controller.dto.AccountDTO;
 import com.ironhack.midterm.project.controller.dto.BalanceDTO;
+import com.ironhack.midterm.project.controller.dto.TransferDTO;
 import com.ironhack.midterm.project.controller.interfaces.AccountController;
 import com.ironhack.midterm.project.model.account.Account;
 import com.ironhack.midterm.project.repository.AccountRepository;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 public class AccountControllerImpl implements AccountController {
@@ -21,10 +23,6 @@ public class AccountControllerImpl implements AccountController {
 
     @Autowired
     private AccountService accountService;
-
-    public List<Account> getAllByUser(String userName) {
-        return null;
-    }
 
     @PostMapping("/accounts")
     @ResponseStatus(HttpStatus.CREATED)
@@ -38,15 +36,15 @@ public class AccountControllerImpl implements AccountController {
         accountService.updateBalance(id, balanceDto);
     }
 
-    public void receiveMoney(String hashedKey, Long id, String secretKey, BalanceDTO balanceDto) {
-
+    @PutMapping("/accounts/third-party")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void receiveOrTransferMoney(@RequestHeader("hashedKey") Optional<String> optionalHashedKey, @RequestBody @Valid TransferDTO transferDto) {
+        accountService.receiveOrTransferMoney(optionalHashedKey, transferDto);
     }
 
-    public void transferMoneyThirdParty(String hashedKey, Long id, String secretKey, BalanceDTO balanceDto) {
-
-    }
-
-    public void transferMoney(String userName, Long id, Long receivingAccountId, String AccountOwnerName, BalanceDTO balanceDto) {
+    @PutMapping("/accounts")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void transferMoney(TransferDTO transferDto) {
 
     }
 }
