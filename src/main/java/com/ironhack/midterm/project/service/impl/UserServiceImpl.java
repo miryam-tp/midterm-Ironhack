@@ -28,14 +28,11 @@ public class UserServiceImpl implements UserService {
             ThirdParty thirdParty = new ThirdParty();
             thirdParty.setHashedKey(userDto.getHashedKey());
 
-            if(userDto.getId() != null) thirdParty.setId(userDto.getId());
-
             thirdParty.setName(userDto.getName());
             return thirdPartyRepository.save(thirdParty);
         }
         else {
             AccountHolder accountHolder = new AccountHolder();
-            if(userDto.getId() != null) accountHolder.setId(userDto.getId());
             accountHolder.setName(userDto.getName());
 
             if(userDto.getDateOfBirth() != null) accountHolder.setDateOfBirth(userDto.getDateOfBirth());

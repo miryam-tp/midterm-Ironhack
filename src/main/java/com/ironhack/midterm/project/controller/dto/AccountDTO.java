@@ -2,6 +2,8 @@ package com.ironhack.midterm.project.controller.dto;
 
 import com.ironhack.midterm.project.enums.AccountType;
 
+import javax.validation.constraints.DecimalMin;
+import javax.validation.constraints.Digits;
 import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 
@@ -9,9 +11,13 @@ public class AccountDTO {
     @NotNull
     private AccountType accountType;
     @NotNull
+    @DecimalMin("0")
+    @Digits(integer = 6, fraction = 2, message = "Wrong balance format")
     private BigDecimal balance;
     @NotNull
+    @DecimalMin("0")
     private Long primaryOwner;
+    @DecimalMin("0")
     private Long secondaryOwner;
 
     //Status se inicia como ACTIVE

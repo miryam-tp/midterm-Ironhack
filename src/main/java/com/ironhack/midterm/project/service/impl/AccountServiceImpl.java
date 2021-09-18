@@ -178,6 +178,7 @@ public class AccountServiceImpl implements AccountService {
         if(balanceAmount.compareTo(new BigDecimal(0)) < 0)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "New balance cannot be negative");
         account.setBalance(new Money(balanceAmount));
+        accountRepository.save(account);
     }
 
 

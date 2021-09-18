@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 
 public class BalanceDTO {
     @NotNull
-    @Digits(integer = 6, fraction = 2, message = "Wrong price format")
+    @Digits(integer = 6, fraction = 2, message = "Wrong balance format")
     private BigDecimal amount;
 
     public BigDecimal getAmount() {

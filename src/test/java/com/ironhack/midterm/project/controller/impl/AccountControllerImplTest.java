@@ -14,6 +14,7 @@ import com.ironhack.midterm.project.repository.AccountHolderRepository;
 import com.ironhack.midterm.project.repository.AccountRepository;
 import com.ironhack.midterm.project.repository.CheckingAccountRepository;
 import com.ironhack.midterm.project.repository.RoleRepository;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -80,7 +81,6 @@ class AccountControllerImplTest {
         accountHolderRepository.save(accountHolder);
 
         checkingAccount = new CheckingAccount();
-        checkingAccount.setId(1L);
         checkingAccount.setBalance(new Money(new BigDecimal("340.56")));
         checkingAccount.setPrimaryOwner(accountHolder);
         checkingAccount.setCreationDate(LocalDate.now());
@@ -89,11 +89,12 @@ class AccountControllerImplTest {
         checkingAccount.setPenaltyFee(new Money(new BigDecimal("40")));
         checkingAccount.setSecretKey("29837");
         checkingAccount.setStatus(Status.ACTIVE);
+        checkingAccountRepository.save(checkingAccount);
     }
 
     @AfterEach
     void tearDown() {
-
+        checkingAccountRepository.deleteAll();
         accountRepository.deleteAll();
         accountHolderRepository.deleteAll();
 //        roleRepository.deleteAll();
@@ -123,19 +124,43 @@ class AccountControllerImplTest {
     }
 
     @Test
-    void updateBalance_ValidBalance_UpdatedNoContent() throws Exception {
+    void updateBalance_ValidBalance_StatusNoContent() throws Exception {
         BalanceDTO balanceDTO = new BalanceDTO();
-
+        balanceDTO.setAmount(new BigDecimal("600.25"));
         String body = objectMapper.writeValueAsString(balanceDTO);
 
-        mockMvc.perform(put("accounts/1")
+        mockMvc.perform(put("/accounts/1")
                     .content(body)
                     .contentType(MediaType.APPLICATION_JSON)
                     )
                 .andExpect(status().isNoContent());
+
+        assertEquals(new BigDecimal("600.25"), accountRepository.findById(1L).get().getBalance().getAmount());
     }
 
     @Test
-    void updateBalance_InvalidBalance_BadRequest() {
+    void updateBalance_InvalidBalance_StatusBadRequest() throws Exception {
+        BalanceDTO balanceDTO = new BalanceDTO();
+        balanceDTO.setAmount(new BigDecimal("-100.35"));
+        String body = objectMapper.writeValueAsString(balanceDTO);
+
+        mockMvc.perform(put("/accounts/2")
+                .content(body)
+                .contentType(MediaType.APPLICATION_JSON)
+        )
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void updateBalance_InvalidId_StatusNotFound() throws Exception {
+        BalanceDTO balanceDTO = new BalanceDTO();
+        balanceDTO.setAmount(new BigDecimal("1000"));
+        String body = objectMapper.writeValueAsString(balanceDTO);
+
+        mockMvc.perform(put("/accounts/200")
+                .content(body)
+                .contentType(MediaType.APPLICATION_JSON)
+        )
+                .andExpect(status().isNotFound());
     }
 }

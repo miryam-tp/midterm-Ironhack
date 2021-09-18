@@ -6,21 +6,12 @@ import javax.validation.constraints.NotBlank;
 import java.time.LocalDate;
 
 public class UserDTO {
-    private Long id;
     @NotBlank(message = "Name cannot be blank")
     private String name;
     private LocalDate dateOfBirth;
     private Address primaryAddress;
     private Address mailingAddress;
     private String hashedKey;
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
 
     public String getName() {
         return name;
