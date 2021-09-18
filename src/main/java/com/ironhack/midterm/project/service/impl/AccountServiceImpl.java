@@ -43,6 +43,36 @@ public class AccountServiceImpl implements AccountService {
     @Autowired
     private ThirdPartyRepository thirdPartyRepository;
 
+    public BalanceDTO getBalance(Long id) {
+        Account account = accountRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Account with id " + id + " not found"));
+
+        BalanceDTO balance = new BalanceDTO();
+
+        BigDecimal currentBalance = account.getBalance().getAmount();
+
+        if(account instanceof Savings) {
+            Savings savings = savingsRepository.findById(id).get();
+            int currentYear = LocalDate.now().getYear();
+            int lastInterestYear = savings.getInterestRate().getLastInterest().getYear();
+
+            if(currentYear - lastInterestYear >= 1) {  //Interest applies annually in Savings accounts
+                BigDecimal interest = savings.getInterestRate().getInterest();
+                BigDecimal fees = (currentBalance.multiply(interest)).divide(new BigDecimal("100"));  //Calculates fees
+                currentBalance = currentBalance.add(fees);  //Applies fees
+
+                //Set the date of the last interest to the current date
+                savings.getInterestRate().setLastInterest(LocalDate.now());
+            }
+        }
+        else if(account instanceof CreditCard) {
+            //TODO: Implement interest fees in Credit Card accounts
+        }
+
+        balance.setAmount(currentBalance);
+        return balance;
+    }
+
     public Account store(AccountDTO accountDto) {
         if(accountDto.getBalance() == null || accountDto.getPrimaryOwner() == null)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);

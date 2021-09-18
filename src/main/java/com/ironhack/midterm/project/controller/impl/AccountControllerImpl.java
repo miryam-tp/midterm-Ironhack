@@ -24,6 +24,12 @@ public class AccountControllerImpl implements AccountController {
     @Autowired
     private AccountService accountService;
 
+    @GetMapping("/accounts/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public BalanceDTO getBalance(@PathVariable Long id) {
+        return null;
+    }
+
     @PostMapping("/accounts")
     @ResponseStatus(HttpStatus.CREATED)
     public Account store(@RequestBody @Valid AccountDTO accountDto) {
@@ -44,7 +50,7 @@ public class AccountControllerImpl implements AccountController {
 
     @PutMapping("/accounts")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void transferMoney(TransferDTO transferDto) {
+    public void transferMoney(@RequestBody @Valid TransferDTO transferDto) {
 
     }
 }

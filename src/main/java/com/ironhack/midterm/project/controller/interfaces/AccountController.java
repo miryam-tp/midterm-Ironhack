@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface AccountController {
+    BalanceDTO getBalance(Long id);
     Account store(AccountDTO accountDto);
     void updateBalance(Long id, BalanceDTO balanceDto);
     void receiveOrTransferMoney(Optional<String> optionalHashedKey, TransferDTO transferDto);
