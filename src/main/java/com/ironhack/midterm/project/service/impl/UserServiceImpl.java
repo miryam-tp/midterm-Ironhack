@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 
 @Service
@@ -35,7 +36,11 @@ public class UserServiceImpl implements UserService {
             AccountHolder accountHolder = new AccountHolder();
             accountHolder.setName(userDto.getName());
 
-            if(userDto.getDateOfBirth() != null) accountHolder.setDateOfBirth(userDto.getDateOfBirth());
+            if(userDto.getDateOfBirth() != null){
+                String[] dateFromString = userDto.getDateOfBirth().split("-");
+                LocalDate date = LocalDate.of(Integer.valueOf(dateFromString[2]), Integer.valueOf(dateFromString[1]), Integer.valueOf(dateFromString[0]));
+                accountHolder.setDateOfBirth(date);
+            }
             else throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
 
             if(userDto.getPrimaryAddress() != null) accountHolder.setPrimaryAddress(userDto.getPrimaryAddress());

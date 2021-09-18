@@ -3,12 +3,14 @@ package com.ironhack.midterm.project.controller.dto;
 import com.ironhack.midterm.project.classes.Address;
 
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Pattern;
 import java.time.LocalDate;
 
 public class UserDTO {
     @NotBlank(message = "Name cannot be blank")
     private String name;
-    private LocalDate dateOfBirth;
+    @Pattern(regexp = "\\d\\d-\\d\\d-\\d\\d\\d\\d", message = "Date format must be DD-MM-YYYY")
+    private String dateOfBirth;
     private Address primaryAddress;
     private Address mailingAddress;
     private String hashedKey;
@@ -21,11 +23,11 @@ public class UserDTO {
         this.name = name;
     }
 
-    public LocalDate getDateOfBirth() {
+    public String getDateOfBirth() {
         return dateOfBirth;
     }
 
-    public void setDateOfBirth(LocalDate dateOfBirth) {
+    public void setDateOfBirth(String dateOfBirth) {
         this.dateOfBirth = dateOfBirth;
     }
 

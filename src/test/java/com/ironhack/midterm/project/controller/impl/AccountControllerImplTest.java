@@ -101,7 +101,7 @@ class AccountControllerImplTest {
     }
 
     @Test
-    void store_ValidCheckingAccount_Created() throws Exception {
+    void store_ValidCheckingAccount_StatusCreated() throws Exception {
         AccountDTO accountDTO = new AccountDTO();
         accountDTO.setAccountType(AccountType.CHECKING);
         accountDTO.setBalance(new BigDecimal("2050.34"));
