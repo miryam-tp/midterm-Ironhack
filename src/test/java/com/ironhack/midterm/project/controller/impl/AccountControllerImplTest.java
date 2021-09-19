@@ -100,6 +100,8 @@ class AccountControllerImplTest {
 //        roleRepository.deleteAll();
     }
 
+    //TODO: getBalance tests
+
     @Test
     void store_ValidCheckingAccount_StatusCreated() throws Exception {
         AccountDTO accountDTO = new AccountDTO();
@@ -170,5 +172,9 @@ class AccountControllerImplTest {
                 .andExpect(status().isNotFound());
     }
 
-    //TODO: Tests receiveOrTransferMoney
+    //TODO: receiveOrTransferMoney tests
+    @Test
+    void receiveOrTransferMoney_ValidRequest_StatusNoContent() {
+
+    }
 }

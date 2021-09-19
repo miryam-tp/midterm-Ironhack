@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.Optional;
 
@@ -44,6 +45,9 @@ public class AccountServiceImpl implements AccountService {
     private ThirdPartyRepository thirdPartyRepository;
 
     public BalanceDTO getBalance(Long id) {
+        //TODO: Validate user admin or account holder
+        //TODO: If account holder, check account owner
+
         Account account = accountRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Account with id " + id + " not found"));
 
@@ -56,20 +60,48 @@ public class AccountServiceImpl implements AccountService {
             int currentYear = LocalDate.now().getYear();
             int lastInterestYear = savings.getInterestRate().getLastInterest().getYear();
 
-            if(currentYear - lastInterestYear >= 1) {  //Interest applies annually in Savings accounts
+            if(currentYear - lastInterestYear > 0   ) {  //Interest applies annually in Savings accounts
+                int yearsPassed = currentYear - lastInterestYear;
                 BigDecimal interest = savings.getInterestRate().getInterest();
-                BigDecimal fees = (currentBalance.multiply(interest)).divide(new BigDecimal("100"));  //Calculates fees
-                currentBalance = currentBalance.add(fees);  //Applies fees
+
+                //For each year passed since the last time the account was accessed, we apply the interest rate
+                for (int i = 0; i < yearsPassed ; i++) {
+                    BigDecimal fees = currentBalance.multiply(interest);  //Calculates fees
+                    currentBalance = currentBalance.add(fees);  //Applies fees
+                }
 
                 //Set the date of the last interest to the current date
                 savings.getInterestRate().setLastInterest(LocalDate.now());
+                savings.setBalance(new Money(currentBalance));
+                savingsRepository.save(savings);
+            }
+        } else if(account instanceof CreditCard) {
+            CreditCard creditCard = creditCardRepository.findById(id).get();
+
+            int currentYear = LocalDate.now().getYear();
+            int currentMonth = LocalDate.now().getMonthValue();
+            int lastInterestYear = creditCard.getInterestRate().getLastInterest().getYear();
+            int lastInterestMonth = creditCard.getInterestRate().getLastInterest().getMonthValue();
+
+            //Interest applies monthly in Credit Card accounts
+            if(currentYear - lastInterestYear > 0 || currentMonth - lastInterestMonth > 0) {
+                BigDecimal monthlyInterest = creditCard.getInterestRate().getInterest().divide(new BigDecimal("12"));
+                int monthsPassed = (currentYear - lastInterestYear) * 12 + currentMonth - lastInterestMonth;
+
+                //For each month passed since the last time the account was accessed, we apply the interest rate
+                for(int i = 0; i < monthsPassed; i++) {
+                    BigDecimal fees = currentBalance.multiply(monthlyInterest);
+                    currentBalance = currentBalance.add(fees);
+                }
+
+                //Set the date of the last interest to the current date
+                creditCard.getInterestRate().setLastInterest(LocalDate.now());
+                creditCard.setBalance(new Money(currentBalance));
+                creditCardRepository.save(creditCard);
             }
         }
-        else if(account instanceof CreditCard) {
-            //TODO: Implement interest fees in Credit Card accounts
-        }
 
-        balance.setAmount(currentBalance);
+        balance.setAmount(currentBalance.setScale(2, RoundingMode.HALF_EVEN));
         return balance;
     }
 
@@ -111,6 +143,7 @@ public class AccountServiceImpl implements AccountService {
                         creditCard.setInterestRate(new InterestRate(new BigDecimal("0.2")));
                     else creditCard.setInterestRate(new InterestRate(accountDto.getInterestRate()));
                 }
+                creditCard.getInterestRate().setLastInterest(LocalDate.now());
 
                 return creditCardRepository.save(creditCard);
 
@@ -197,6 +230,7 @@ public class AccountServiceImpl implements AccountService {
                         savings.setInterestRate(new InterestRate(new BigDecimal("0.0025")));
                     else savings.setInterestRate(new InterestRate(accountDto.getInterestRate()));
                 }
+                savings.getInterestRate().setLastInterest(LocalDate.now());
 
                 savings.setPenaltyFee(new Money(new BigDecimal(40)));
                 savings.setStatus(Status.ACTIVE);
@@ -228,9 +262,8 @@ public class AccountServiceImpl implements AccountService {
         Account account = accountRepository.findById(transferDto.getTargetAccount())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find target account"));
 
-        //TODO: Implement Credit Card handling
-//        if(account instanceof CreditCard)
-//            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY);
+        if(account instanceof CreditCard)
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY);
 
         if(account instanceof Savings) {
             Savings savings = savingsRepository.findById(account.getId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
@@ -240,8 +273,8 @@ public class AccountServiceImpl implements AccountService {
                 throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Secret key is not valid");
 
             //Calculate new balance after transaction
-            //If amount is negative, the third party receives money
             //If amount is positive, the third party transfers money
+            //If amount is negative, the third party receives money
             Money newBalance = new Money(savings.getBalance().getAmount().add(transferDto.getAmount()));
 
             //Check if balance is lower than minimum balance after transaction
@@ -260,8 +293,8 @@ public class AccountServiceImpl implements AccountService {
                 throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Secret key is not valid");
 
             //Calculate new balance after transaction
-            //If amount is negative, third party receives money
             //If amount is positive, third party transfers money
+            //If amount is negative, third party receives money
             Money newBalance = new Money(checkingAccount.getBalance().getAmount().add(transferDto.getAmount()));
 
             //Check if balance is lower than minimum balance after transaction
