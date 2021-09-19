@@ -263,7 +263,7 @@ class AccountControllerImplTest {
     @Test
     void updateBalance_InvalidBalance_StatusBadRequest() throws Exception {
         BalanceDTO balanceDTO = new BalanceDTO();
-        balanceDTO.setAmount(new BigDecimal("-100.35"));  //Al poner validación en el DTO a lo mejor esto da error ahora, cuidado
+        balanceDTO.setAmount(new BigDecimal("-100.35"));
         String body = objectMapper.writeValueAsString(balanceDTO);
 
         mockMvc.perform(put("/accounts/1")

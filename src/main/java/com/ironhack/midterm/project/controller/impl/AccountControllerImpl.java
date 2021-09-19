@@ -51,6 +51,6 @@ public class AccountControllerImpl implements AccountController {
     @PutMapping("/accounts")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void transferMoney(@RequestBody @Valid TransferDTO transferDto) {
-
+        accountService.transferMoney(transferDto);
     }
 }

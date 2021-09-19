@@ -8,8 +8,9 @@ import com.ironhack.midterm.project.model.account.Account;
 import java.util.Optional;
 
 public interface AccountService {
-    public BalanceDTO getBalance(Long id);
+    BalanceDTO getBalance(Long id);
     Account store(AccountDTO accountDto);
     void updateBalance(Long id, BalanceDTO balanceDto);
     void receiveOrTransferMoney(Optional<String> optionalHashedKey, TransferDTO transferDto);
+    void transferMoney(TransferDTO transferDto);
 }

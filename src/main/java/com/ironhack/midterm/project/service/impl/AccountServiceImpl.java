@@ -323,5 +323,8 @@ public class AccountServiceImpl implements AccountService {
         }
     }
 
-
+    public void transferMoney(TransferDTO transferDto) {
+        //Consider transfering money from credit card accounts will increase their balance
+        //Should transfering money to a credit card account decrease its balance?
+    }
 }
