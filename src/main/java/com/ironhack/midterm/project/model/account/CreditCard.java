@@ -19,6 +19,12 @@ public class CreditCard extends Account {
     @NotNull
     @Embedded
     private InterestRate interestRate;
+    @NotNull
+    @AttributeOverrides({
+            @AttributeOverride(name = "currency", column = @Column(name = "penalty_currency")),
+            @AttributeOverride(name = "amount", column = @Column(name = "penalty_amount"))
+    })
+    private Money penaltyFee;
 
     public Money getCreditLimit() {
         return creditLimit;
@@ -34,5 +40,13 @@ public class CreditCard extends Account {
 
     public void setInterestRate(InterestRate interestRate) {
         this.interestRate = interestRate;
+    }
+
+    public Money getPenaltyFee() {
+        return penaltyFee;
+    }
+
+    public void setPenaltyFee(Money penaltyFee) {
+        this.penaltyFee = penaltyFee;
     }
 }

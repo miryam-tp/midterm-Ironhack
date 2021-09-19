@@ -16,6 +16,11 @@ public class InterestRate {
         this.interest = interest;
     }
 
+    public InterestRate(BigDecimal interest, LocalDate lastInterest) {
+        this.interest = interest;
+        this.lastInterest = lastInterest;
+    }
+
     public BigDecimal getInterest() {
         return interest;
     }

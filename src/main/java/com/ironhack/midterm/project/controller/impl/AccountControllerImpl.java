@@ -27,7 +27,7 @@ public class AccountControllerImpl implements AccountController {
     @GetMapping("/accounts/{id}")
     @ResponseStatus(HttpStatus.OK)
     public BalanceDTO getBalance(@PathVariable Long id) {
-        return null;
+        return accountService.getBalance(id);
     }
 
     @PostMapping("/accounts")

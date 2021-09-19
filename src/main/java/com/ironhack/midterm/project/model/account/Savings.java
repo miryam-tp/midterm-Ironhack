@@ -29,7 +29,7 @@ public class Savings extends Account {
             @AttributeOverride(name = "currency", column = @Column(name = "penalty_currency")),
             @AttributeOverride(name = "amount", column = @Column(name = "penalty_amount"))
     })
-    private Money penaltyFee = new Money(new BigDecimal(40), Money.EUR);
+    private Money penaltyFee;
     @NotBlank
     private String secretKey;
     @Enumerated(EnumType.STRING)

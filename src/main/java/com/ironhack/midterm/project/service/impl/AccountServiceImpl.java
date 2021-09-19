@@ -145,6 +145,8 @@ public class AccountServiceImpl implements AccountService {
                 }
                 creditCard.getInterestRate().setLastInterest(LocalDate.now());
 
+                creditCard.setPenaltyFee(new Money(new BigDecimal(40)));
+
                 return creditCardRepository.save(creditCard);
 
             case CHECKING:
