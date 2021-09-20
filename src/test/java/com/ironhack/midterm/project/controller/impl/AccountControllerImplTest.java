@@ -16,11 +16,13 @@ import com.ironhack.midterm.project.model.account.StudentChecking;
 import com.ironhack.midterm.project.model.users.AccountHolder;
 import com.ironhack.midterm.project.model.users.Role;
 import com.ironhack.midterm.project.model.users.ThirdParty;
+import com.ironhack.midterm.project.model.users.User;
 import com.ironhack.midterm.project.repository.*;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -41,13 +43,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class AccountControllerImplTest {
 
     @Autowired
+    private RoleRepository roleRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
     private AccountHolderRepository accountHolderRepository;
 
     @Autowired
     private ThirdPartyRepository thirdPartyRepository;
-
-//    @Autowired
-//    private RoleRepository roleRepository;
 
     @Autowired
     private AccountRepository accountRepository;
@@ -67,11 +72,14 @@ class AccountControllerImplTest {
     @Autowired
     private WebApplicationContext webApplicationContext;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     private MockMvc mockMvc;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-//    private Role role;
+    private Role role;
     private AccountHolder accountHolder;
     private ThirdParty thirdParty;
     private CheckingAccount checkingAccount;
@@ -85,10 +93,15 @@ class AccountControllerImplTest {
     void setUp() {
         mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
 
+        role = new Role("ACCOUNTHOLDER");
+        roleRepository.save(role);
+
         address = new Address("4B", "Sierpes", "Sevilla", "Spain");
 
         accountHolder = new AccountHolder();
         accountHolder.setName("Lucas Sánchez");
+        accountHolder.setPassword(passwordEncoder.encode("123456"));
+        accountHolder.setRole(role);
         accountHolder.setDateOfBirth(LocalDate.of(1990, 10, 1));
         accountHolder.setPrimaryAddress(address);
         accountHolder.setMailingAddress(address);
@@ -140,14 +153,11 @@ class AccountControllerImplTest {
         savings.setPenaltyFee(new Money(new BigDecimal("40")));
         savings.setMinimumBalance(new Money(new BigDecimal("1000")));
         savings.setInterestRate(new InterestRate(
-                        new BigDecimal("0.0025"),
+                        new BigDecimal("0.2"),
                         LocalDate.of(LocalDate.now().getYear() - 1, LocalDate.now().getMonthValue(), LocalDate.now().getDayOfMonth())
                 )
         );
         savingsRepository.save(savings);
-
-//        role = new Role("Account_Holder");
-//        roleRepository.save(role);
     }
 
     //region getBalance tests
@@ -192,7 +202,7 @@ class AccountControllerImplTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andReturn();
 
-        assertTrue(mvcResult.getResponse().getContentAsString().contains("1504.10"));
+        assertTrue(mvcResult.getResponse().getContentAsString().contains("1800.42"));
     }
 
     @Test

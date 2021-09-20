@@ -4,6 +4,7 @@ import com.ironhack.midterm.project.classes.InterestRate;
 import com.ironhack.midterm.project.classes.Money;
 
 import javax.persistence.*;
+import javax.validation.constraints.Digits;
 import javax.validation.constraints.NotNull;
 
 @Entity
@@ -18,6 +19,7 @@ public class CreditCard extends Account {
     private Money creditLimit;
     @NotNull
     @Embedded
+//    @Digits(integer = 2, fraction = 4)
     private InterestRate interestRate;
     @NotNull
     @AttributeOverrides({

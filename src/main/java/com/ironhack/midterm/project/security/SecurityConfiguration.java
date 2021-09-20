@@ -35,14 +35,14 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-//        http.httpBasic();
-//        http.csrf().disable();
-//        http.authorizeRequests()
+        http.httpBasic();
+        http.csrf().disable();
+        http.authorizeRequests()
 //                .mvcMatchers(HttpMethod.GET, "/hello-world").authenticated()
 //                .mvcMatchers(HttpMethod.GET, "/hello-me").authenticated()
 //                .mvcMatchers(HttpMethod.GET, "/hello/**").hasRole("ADMIN")
 //                .mvcMatchers(HttpMethod.POST, "/hello-post").hasAnyRole("ADMIN", "TECHNICIAN")
-//                .anyRequest().permitAll();
+                .anyRequest().permitAll();
 
     }
 }

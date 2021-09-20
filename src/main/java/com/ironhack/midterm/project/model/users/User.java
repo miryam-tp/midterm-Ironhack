@@ -15,15 +15,15 @@ public abstract class User {
 
     @ManyToOne
     @JoinColumn(name = "role_id")
-    private Role role;        //Cannot be not null because third party users will not have a role
+    private Role role; //Cannot be not null because third party users will not have a role
 
     public User() {
     }
 
-    public User(String username, String password, Role roles) {
+    public User(String username, String password, Role role) {
         this.name = username;
         this.password = password;
-        this.role = roles;
+        this.role = role;
     }
 
     public Long getId() {
