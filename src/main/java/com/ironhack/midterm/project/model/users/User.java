@@ -11,11 +11,11 @@ public abstract class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name;
-    private String password;
+    private String password;  //Cannot be not null because third party users will not have a password
 
     @ManyToOne
     @JoinColumn(name = "role_id")
-    private Role role;
+    private Role role;        //Cannot be not null because third party users will not have a role
 
     public User() {
     }

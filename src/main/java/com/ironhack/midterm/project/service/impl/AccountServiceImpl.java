@@ -44,24 +44,24 @@ public class AccountServiceImpl implements AccountService {
     @Autowired
     private ThirdPartyRepository thirdPartyRepository;
 
+    //TODO: Find way to apply monthly maintenance fees to Checking Accounts
+
     public BalanceDTO getBalance(Long id) {
-        //TODO: Validate user admin or account holder
-        //TODO: If account holder, check account owner
+        //TODO: Validate user admin or account holder. If account holder, validate account owner
 
         Account account = accountRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Account with id " + id + " not found"));
 
         BalanceDTO balance = new BalanceDTO();
-
         BigDecimal currentBalance = account.getBalance().getAmount();
 
         if(account instanceof Savings) {
             Savings savings = savingsRepository.findById(id).get();
             int currentYear = LocalDate.now().getYear();
             int lastInterestYear = savings.getInterestRate().getLastInterest().getYear();
+            int yearsPassed = currentYear - lastInterestYear;
 
-            if(currentYear - lastInterestYear > 0   ) {  //Interest applies annually in Savings accounts
-                int yearsPassed = currentYear - lastInterestYear;
+            if(yearsPassed > 0) {  //Interest applies annually in Savings accounts
                 BigDecimal interest = savings.getInterestRate().getInterest();
 
                 //For each year passed since the last time the account was accessed, we apply the interest rate
@@ -261,6 +261,7 @@ public class AccountServiceImpl implements AccountService {
         thirdPartyRepository.findByHashedKey(hashedKey)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Third party user with hashed key " + hashedKey + " does not exist"));
 
+        //Check if target account exists
         Account account = accountRepository.findById(transferDto.getTargetAccount())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find target account"));
 
@@ -271,7 +272,7 @@ public class AccountServiceImpl implements AccountService {
             Savings savings = savingsRepository.findById(account.getId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
             //Check if secret key is valid
-            if(savings.getSecretKey() != transferDto.getSecretKey())
+            if(!savings.getSecretKey().equals(transferDto.getSecretKey()))
                 throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Secret key is not valid");
 
             //Calculate new balance after transaction
@@ -291,7 +292,7 @@ public class AccountServiceImpl implements AccountService {
             CheckingAccount checkingAccount = checkingAccountRepository.findById(account.getId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
             //Check if secret key is valid
-            if(checkingAccount.getSecretKey() != transferDto.getSecretKey())
+            if(!checkingAccount.getSecretKey().equals(transferDto.getSecretKey()))
                 throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Secret key is not valid");
 
             //Calculate new balance after transaction
@@ -310,7 +311,7 @@ public class AccountServiceImpl implements AccountService {
             StudentChecking studentChecking = studentCheckingRepository.findById(account.getId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
             //Check if secret key is valid
-            if(studentChecking.getSecretKey() != transferDto.getSecretKey())
+            if(!studentChecking.getSecretKey().equals(transferDto.getSecretKey()))
                 throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Secret key is not valid");
 
             //Calculate new balance after transaction

@@ -49,6 +49,8 @@ public class UserServiceImpl implements UserService {
             if(userDto.getMailingAddress() != null) accountHolder.setMailingAddress(userDto.getMailingAddress());
             else throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
 
+            //TODO: Set ROLE to AccountHolder
+
 //            accountHolder.setAccountList(new ArrayList<>());
             return accountHolderRepository.save(accountHolder);
         }

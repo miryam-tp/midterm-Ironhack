@@ -6,7 +6,7 @@ import java.util.Set;
 
 @Entity
 @PrimaryKeyJoinColumn(name = "id")
-public class ThirdParty extends User{
+public class ThirdParty extends User {
     @NotBlank
     private String hashedKey;
 
