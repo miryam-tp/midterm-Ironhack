@@ -73,6 +73,7 @@ public class AccountServiceImpl implements AccountService {
                 //Set the date of the last interest to the current date
                 savings.getInterestRate().setLastInterest(LocalDate.now());
                 savings.setBalance(new Money(currentBalance));
+//                accountRepository.save(savings);
                 savingsRepository.save(savings);
             }
         } else if(account instanceof CreditCard) {
@@ -106,7 +107,7 @@ public class AccountServiceImpl implements AccountService {
     }
 
     public Account store(AccountDTO accountDto) {
-        if(accountDto.getBalance() == null || accountDto.getPrimaryOwner() == null)
+        if(accountDto.getBalance() == null || accountDto.getPrimaryOwner() == null || accountDto.getAccountType() == null)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
 
         AccountHolder primaryOwner = accountHolderRepository.findById(accountDto.getPrimaryOwner())

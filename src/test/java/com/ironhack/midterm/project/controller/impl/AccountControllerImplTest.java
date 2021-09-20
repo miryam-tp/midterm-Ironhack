@@ -150,6 +150,7 @@ class AccountControllerImplTest {
 //        roleRepository.save(role);
     }
 
+    //region getBalance tests
     @Test
     void getBalance_ValidRequestForCheckingAccount_ReturnsBalance() throws Exception {
         MvcResult mvcResult = mockMvc.perform(get("/accounts/1"))
@@ -183,7 +184,6 @@ class AccountControllerImplTest {
     }
 
     @Test
-    @Disabled
     void getBalance_ValidRequestForSavingsAccount_ReturnsBalanceWithInterestRateApplied() throws Exception {
         //The account's last interest date is set to be a year before the current date
         //Interest rates will be applied for each year
@@ -192,7 +192,7 @@ class AccountControllerImplTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andReturn();
 
-        assertTrue(mvcResult.getResponse().getContentAsString().contains("1504.10"));  //Fails because interest rate is not applied
+        assertTrue(mvcResult.getResponse().getContentAsString().contains("1504.10"));
     }
 
     @Test
@@ -200,9 +200,11 @@ class AccountControllerImplTest {
         mockMvc.perform(get("/accounts/0"))
                 .andExpect(status().isNotFound());
     }
+    //endregion
 
     //TODO: add authentication checks to tests
 
+    //region store tests
     @Test
     void store_ValidCheckingAccount_StatusCreated() throws Exception {
         AccountDTO accountDTO = new AccountDTO();
@@ -252,10 +254,165 @@ class AccountControllerImplTest {
         assertTrue(mvcResult.getResponse().getContentAsString(StandardCharsets.UTF_8).contains("Lucas Sánchez"));
     }
 
-    //TODO: Test de store con CreditCard
+    @Test
+    void store_ValidCreditCardAccount_StatusCreated() throws Exception {
+        AccountDTO accountDto = new AccountDTO();
+        accountDto.setAccountType(AccountType.CREDIT_CARD);
+        accountDto.setBalance(new BigDecimal("0"));
+        accountDto.setPrimaryOwner(1L);
+        accountDto.setCreditLimit(new BigDecimal("200"));
 
-    //TODO: Test de store con Savings
+        String body = objectMapper.writeValueAsString(accountDto);
 
+        MvcResult mvcResult = mockMvc.perform(post("/accounts")
+                .content(body)
+                .contentType(MediaType.APPLICATION_JSON)
+                .characterEncoding("UTF-8")
+        )
+                .andExpect(status().isCreated())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andReturn();
+
+        assertTrue(mvcResult.getResponse().getContentAsString(StandardCharsets.UTF_8).contains("Lucas Sánchez"));
+        assertTrue(mvcResult.getResponse().getContentAsString(StandardCharsets.UTF_8).contains("200"));
+        assertTrue(mvcResult.getResponse().getContentAsString(StandardCharsets.UTF_8).contains("0.2"));
+    }
+
+    @Test
+    void store_ValidSavingsAccount_StatusCreated() throws Exception {
+        AccountDTO accountDto = new AccountDTO();
+        accountDto.setAccountType(AccountType.SAVINGS);
+        accountDto.setBalance(new BigDecimal("2100"));
+        accountDto.setPrimaryOwner(1L);
+        accountDto.setSecretKey("LLLL1");
+        accountDto.setMinimumBalance(new BigDecimal("500"));
+
+        String body = objectMapper.writeValueAsString(accountDto);
+
+        MvcResult mvcResult = mockMvc.perform(post("/accounts")
+                .content(body)
+                .contentType(MediaType.APPLICATION_JSON)
+                .characterEncoding("UTF-8")
+        )
+                .andExpect(status().isCreated())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andReturn();
+
+        assertTrue(mvcResult.getResponse().getContentAsString(StandardCharsets.UTF_8).contains("Lucas Sánchez"));
+        assertTrue(mvcResult.getResponse().getContentAsString(StandardCharsets.UTF_8).contains("2100"));
+        assertTrue(mvcResult.getResponse().getContentAsString(StandardCharsets.UTF_8).contains("0.0025"));
+    }
+
+    @Test
+    void store_EmptyBalance_StatusBadRequest() throws Exception {
+        AccountDTO accountDto = new AccountDTO();
+        accountDto.setAccountType(AccountType.SAVINGS);
+        accountDto.setPrimaryOwner(1L);
+        accountDto.setSecretKey("LLLL1");
+        accountDto.setMinimumBalance(new BigDecimal("500"));
+
+        String body = objectMapper.writeValueAsString(accountDto);
+
+        mockMvc.perform(post("/accounts")
+            .content(body)
+            .contentType(MediaType.APPLICATION_JSON)
+            .characterEncoding("UTF-8")
+        )
+        .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void store_EmptyPrimaryOwner_StatusBadRequest() throws Exception {
+        AccountDTO accountDto = new AccountDTO();
+        accountDto.setAccountType(AccountType.SAVINGS);
+        accountDto.setBalance(new BigDecimal("2100"));
+        accountDto.setSecretKey("LLLL1");
+        accountDto.setMinimumBalance(new BigDecimal("500"));
+
+        String body = objectMapper.writeValueAsString(accountDto);
+
+        mockMvc.perform(post("/accounts")
+                .content(body)
+                .contentType(MediaType.APPLICATION_JSON)
+                .characterEncoding("UTF-8")
+        )
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void store_EmptyAccountType_StatusBadRequest() throws Exception {
+        AccountDTO accountDto = new AccountDTO();
+        accountDto.setBalance(new BigDecimal("2100"));
+        accountDto.setPrimaryOwner(1L);
+        accountDto.setSecretKey("LLLL1");
+        accountDto.setMinimumBalance(new BigDecimal("500"));
+
+        String body = objectMapper.writeValueAsString(accountDto);
+
+        mockMvc.perform(post("/accounts")
+                .content(body)
+                .contentType(MediaType.APPLICATION_JSON)
+                .characterEncoding("UTF-8")
+        )
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void store_InvalidPrimaryOwner_StatusNotFound() throws Exception {
+        AccountDTO accountDto = new AccountDTO();
+        accountDto.setAccountType(AccountType.CHECKING);
+        accountDto.setBalance(new BigDecimal("2050.34"));
+        accountDto.setPrimaryOwner(999L);
+        accountDto.setSecretKey("28733");
+
+        String body = objectMapper.writeValueAsString(accountDto);
+
+        mockMvc.perform(post("/accounts")
+                .content(body)
+                .contentType(MediaType.APPLICATION_JSON)
+                .characterEncoding("UTF-8")
+        )
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void store_InvalidSecondaryOwner_StatusNotFound() throws Exception {
+        AccountDTO accountDto = new AccountDTO();
+        accountDto.setAccountType(AccountType.CHECKING);
+        accountDto.setBalance(new BigDecimal("2050.34"));
+        accountDto.setPrimaryOwner(1L);
+        accountDto.setSecondaryOwner(999L);
+        accountDto.setSecretKey("28733");
+
+        String body = objectMapper.writeValueAsString(accountDto);
+
+        mockMvc.perform(post("/accounts")
+                .content(body)
+                .contentType(MediaType.APPLICATION_JSON)
+                .characterEncoding("UTF-8")
+        )
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void store_InvalidCheckingAccountNoSecretKey_StatusBadRequest() throws Exception {
+        AccountDTO accountDto = new AccountDTO();
+        accountDto.setAccountType(AccountType.CHECKING);
+        accountDto.setBalance(new BigDecimal("2050.34"));
+        accountDto.setPrimaryOwner(1L);
+
+        String body = objectMapper.writeValueAsString(accountDto);
+
+        mockMvc.perform(post("/accounts")
+                .content(body)
+                .contentType(MediaType.APPLICATION_JSON)
+                .characterEncoding("UTF-8")
+        )
+                .andExpect(status().isBadRequest());
+    }
+    //endregion
+
+    //region updateBalance tests
     @Test
     void updateBalance_ValidBalance_StatusNoContent() throws Exception {
         BalanceDTO balanceDTO = new BalanceDTO();
@@ -297,12 +454,16 @@ class AccountControllerImplTest {
         )
                 .andExpect(status().isNotFound());
     }
+    //endregion
 
+    //region receiveOrTransferMoney tests
     @Test
     void receiveOrTransferMoney_ValidTransferRequest_StatusNoContent() throws Exception {
+        checkingAccount.setBalance(new Money(new BigDecimal("340.56")));
+
         TransferDTO transferDto = new TransferDTO();
         transferDto.setTargetAccount(1L);
-        transferDto.setAmount(new BigDecimal("60.44"));
+        transferDto.setAmount(new BigDecimal("59.44"));
         transferDto.setSecretKey(checkingAccount.getSecretKey());
 
         String body = objectMapper.writeValueAsString(transferDto);
@@ -314,15 +475,16 @@ class AccountControllerImplTest {
         )
                 .andExpect(status().isNoContent());
 
-        assertEquals("400.00", checkingAccountRepository.findById(1L).get().getBalance().getAmount().setScale(2, RoundingMode.HALF_EVEN));
+        assertEquals(new BigDecimal("400.00"), checkingAccountRepository.findById(1L).get().getBalance().getAmount().setScale(2, RoundingMode.HALF_EVEN));
         checkingAccount.setBalance(new Money(new BigDecimal("340.56")));
     }
 
     @Test
     void receiveOrTransferMoney_ValidReceiveRequest_StatusNoContent() throws Exception {
+        savings.setBalance(new Money(new BigDecimal("1500.35")));
         TransferDTO transferDto = new TransferDTO();
         transferDto.setTargetAccount(4L);
-        transferDto.setAmount(new BigDecimal("50.35"));
+        transferDto.setAmount(new BigDecimal("-50.35"));
         transferDto.setSecretKey(savings.getSecretKey());
 
         String body = objectMapper.writeValueAsString(transferDto);
@@ -334,7 +496,7 @@ class AccountControllerImplTest {
         )
                 .andExpect(status().isNoContent());
 
-        assertEquals("1450.00", checkingAccountRepository.findById(1L).get().getBalance().getAmount().setScale(2, RoundingMode.HALF_EVEN));
+        assertEquals(new BigDecimal("1450.00"), savingsRepository.findById(4L).get().getBalance().getAmount().setScale(2, RoundingMode.HALF_EVEN));
         savings.setBalance(new Money(new BigDecimal("1500.35")));
     }
 
@@ -421,4 +583,5 @@ class AccountControllerImplTest {
         )
                 .andExpect(status().isUnprocessableEntity());
     }
+    //endregion
 }

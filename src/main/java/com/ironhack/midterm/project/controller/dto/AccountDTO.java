@@ -15,9 +15,9 @@ public class AccountDTO {
     @Digits(integer = 6, fraction = 2, message = "Wrong balance format")
     private BigDecimal balance;
     @NotNull
-    @DecimalMin("0")
+    @DecimalMin("1")
     private Long primaryOwner;
-    @DecimalMin("0")
+    @DecimalMin("1")
     private Long secondaryOwner;
 
     //Status se inicia como ACTIVE
