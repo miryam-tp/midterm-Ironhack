@@ -1,5 +1,6 @@
 package com.ironhack.midterm.project.model.account;
 
+import com.ironhack.midterm.project.classes.InterestRate;
 import com.ironhack.midterm.project.classes.Money;
 
 import javax.persistence.*;
@@ -18,7 +19,7 @@ public class CreditCard extends Account {
     private Money creditLimit;
     @NotNull
     @Embedded
-    private BigDecimal interestRate;
+    private InterestRate interestRate;
     @NotNull
     @AttributeOverrides({
             @AttributeOverride(name = "currency", column = @Column(name = "penalty_currency")),
@@ -34,11 +35,11 @@ public class CreditCard extends Account {
         this.creditLimit = creditLimit;
     }
 
-    public BigDecimal getInterestRate() {
+    public InterestRate getInterestRate() {
         return interestRate;
     }
 
-    public void setInterestRate(BigDecimal interestRate) {
+    public void setInterestRate(InterestRate interestRate) {
         this.interestRate = interestRate;
     }
 

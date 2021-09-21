@@ -1,5 +1,6 @@
 package com.ironhack.midterm.project.model.account;
 
+import com.ironhack.midterm.project.classes.InterestRate;
 import com.ironhack.midterm.project.classes.Money;
 import com.ironhack.midterm.project.enums.Status;
 
@@ -20,7 +21,7 @@ public class Savings extends Account {
     private Money minimumBalance;
     @NotNull
     @Embedded
-    private BigDecimal interestRate;
+    private InterestRate interestRate;
     @NotNull
     @Embedded
     @AttributeOverrides({
@@ -42,11 +43,11 @@ public class Savings extends Account {
         this.minimumBalance = minimumBalance;
     }
 
-    public BigDecimal getInterestRate() {
+    public InterestRate getInterestRate() {
         return interestRate;
     }
 
-    public void setInterestRate(BigDecimal interestRate) {
+    public void setInterestRate(InterestRate interestRate) {
         this.interestRate = interestRate;
     }
 

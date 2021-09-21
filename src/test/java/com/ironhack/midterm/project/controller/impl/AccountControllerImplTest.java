@@ -2,6 +2,7 @@ package com.ironhack.midterm.project.controller.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ironhack.midterm.project.classes.Address;
+import com.ironhack.midterm.project.classes.InterestRate;
 import com.ironhack.midterm.project.classes.Money;
 import com.ironhack.midterm.project.controller.dto.AccountDTO;
 import com.ironhack.midterm.project.controller.dto.BalanceDTO;
@@ -85,7 +86,8 @@ class AccountControllerImplTest {
 
     private Role role1;
     private Role role2;
-    private AccountHolder accountHolder;
+    private AccountHolder accountHolder1;
+    private AccountHolder accountHolder2;
     private Admin admin;
     private ThirdParty thirdParty;
     private CheckingAccount checkingAccount;
@@ -105,14 +107,23 @@ class AccountControllerImplTest {
 
         address = new Address("4B", "Sierpes", "Sevilla", "Spain");
 
-        accountHolder = new AccountHolder();
-        accountHolder.setName("Lucas Sánchez");
-        accountHolder.setPassword(passwordEncoder.encode("123456"));
-        accountHolder.setRole(role1);
-        accountHolder.setDateOfBirth(LocalDate.of(1990, 10, 1));
-        accountHolder.setPrimaryAddress(address);
-        accountHolder.setMailingAddress(address);
-        accountHolderRepository.save(accountHolder);
+        accountHolder1 = new AccountHolder();
+        accountHolder1.setName("Lucas Sánchez");
+        accountHolder1.setPassword(passwordEncoder.encode("123456"));
+        accountHolder1.setRole(role1);
+        accountHolder1.setDateOfBirth(LocalDate.of(1990, 10, 1));
+        accountHolder1.setPrimaryAddress(address);
+        accountHolder1.setMailingAddress(address);
+        accountHolderRepository.save(accountHolder1);
+
+        accountHolder2 = new AccountHolder();
+        accountHolder2.setName("Laura Reyes");
+        accountHolder2.setPassword(passwordEncoder.encode("123456"));
+        accountHolder2.setRole(role1);
+        accountHolder2.setDateOfBirth(LocalDate.of(LocalDate.now().getYear() - 22, 3, 25));
+        accountHolder2.setPrimaryAddress(address);
+        accountHolder2.setMailingAddress(address);
+        accountHolderRepository.save(accountHolder2);
 
         admin = new Admin();
         admin.setName("admin");
@@ -127,8 +138,9 @@ class AccountControllerImplTest {
 
         checkingAccount = new CheckingAccount();
         checkingAccount.setBalance(new Money(new BigDecimal("340.56")));
-        checkingAccount.setPrimaryOwner(accountHolder);
+        checkingAccount.setPrimaryOwner(accountHolder1);
         checkingAccount.setCreationDate(LocalDate.now());
+        checkingAccount.setLastAccessed(LocalDate.of(LocalDate.now().getYear(), LocalDate.now().getMonthValue() - 3, LocalDate.now().getDayOfMonth()));
         checkingAccount.setMinimumBalance(new Money(new BigDecimal("250")));
         checkingAccount.setMonthlyMaintenanceFee(new Money(new BigDecimal("12")));
         checkingAccount.setPenaltyFee(new Money(new BigDecimal("40")));
@@ -138,39 +150,55 @@ class AccountControllerImplTest {
 
         studentChecking = new StudentChecking();
         studentChecking.setBalance(new Money(new BigDecimal("660.7")));
-        studentChecking.setPrimaryOwner(accountHolder);
+        studentChecking.setPrimaryOwner(accountHolder2);
         studentChecking.setCreationDate(LocalDate.now());
+        studentChecking.setLastAccessed(LocalDate.now());
         studentChecking.setSecretKey("AB$334");
         studentChecking.setStatus(Status.ACTIVE);
         studentCheckingRepository.save(studentChecking);
 
         creditCard = new CreditCard();
         creditCard.setBalance(new Money(new BigDecimal("2000")));
-        creditCard.setPrimaryOwner(accountHolder);
+        creditCard.setPrimaryOwner(accountHolder1);
         creditCard.setCreationDate(LocalDate.now());
         creditCard.setLastAccessed(LocalDate.of(LocalDate.now().getYear(), LocalDate.now().getMonthValue() - 3, LocalDate.now().getDayOfMonth()));
-        creditCard.setInterestRate(new BigDecimal("0.12"));
+        creditCard.setInterestRate(new InterestRate(new BigDecimal("0.12")));
         creditCard.setCreditLimit(new Money(new BigDecimal("500")));
         creditCard.setPenaltyFee(new Money(new BigDecimal("40")));
         creditCardRepository.save(creditCard);
 
         savings = new Savings();
         savings.setBalance(new Money(new BigDecimal("1500.35")));
-        savings.setPrimaryOwner(accountHolder);
+        savings.setPrimaryOwner(accountHolder1);
         savings.setCreationDate(LocalDate.now());
         savings.setLastAccessed(LocalDate.of(LocalDate.now().getYear() - 1, LocalDate.now().getMonthValue(), LocalDate.now().getDayOfMonth()));
         savings.setSecretKey("123456");
         savings.setStatus(Status.ACTIVE);
         savings.setPenaltyFee(new Money(new BigDecimal("40")));
         savings.setMinimumBalance(new Money(new BigDecimal("1000")));
-        savings.setInterestRate(new BigDecimal("0.2"));
+        savings.setInterestRate(new InterestRate(new BigDecimal("0.2")));
         savingsRepository.save(savings);
     }
 
     //region getBalance tests
     @Test
-    void getBalance_ValidRequestForCheckingAccount_ReturnsBalance() throws Exception {
+    void getBalance_ValidAdminRequestForCheckingAccount_ReturnsBalanceWithFeesApplied() throws Exception {
+        //Note that last accessed is set to be three months before the current date
+        //Monthly maintenance fee will be applied
         MvcResult mvcResult = mockMvc.perform(get("/accounts/1").with(httpBasic("admin", "123456")))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andReturn();
+
+        assertTrue(mvcResult.getResponse().getContentAsString().contains("304.56"));
+        checkingAccount.setBalance(new Money(new BigDecimal("340.56")));
+    }
+
+    @Test
+    void getBalance_ValidAccountHolderRequestForCheckingAccount_ReturnsBalance() throws Exception {
+        checkingAccount.setLastAccessed(LocalDate.now());
+
+        MvcResult mvcResult = mockMvc.perform(get("/accounts/1").with(httpBasic("Lucas Sánchez", "123456")))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andReturn();
@@ -180,7 +208,7 @@ class AccountControllerImplTest {
 
     @Test
     void getBalance_ValidRequestForStudentCheckingAccount_ReturnsBalance() throws Exception {
-        MvcResult mvcResult = mockMvc.perform(get("/accounts/2"))
+        MvcResult mvcResult = mockMvc.perform(get("/accounts/2").with(httpBasic("Laura Reyes", "123456")))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andReturn();
@@ -192,24 +220,32 @@ class AccountControllerImplTest {
     void getBalance_ValidRequestForCreditCardAccount_ReturnsBalanceWithInterestRateApplied() throws Exception {
         //The credit card's last interest date is set to be three months before the current date
         //Interest rates will be applied for each month
-        MvcResult mvcResult = mockMvc.perform(get("/accounts/3"))
+        MvcResult mvcResult = mockMvc.perform(get("/accounts/3").with(httpBasic("Lucas Sánchez", "123456")))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andReturn();
 
         assertTrue(mvcResult.getResponse().getContentAsString().contains("2060.60"));
+        creditCard.setBalance(new Money(new BigDecimal("2000")));
     }
 
     @Test
     void getBalance_ValidRequestForSavingsAccount_ReturnsBalanceWithInterestRateApplied() throws Exception {
         //The account's last interest date is set to be a year before the current date
         //Interest rates will be applied for each year
-        MvcResult mvcResult = mockMvc.perform(get("/accounts/4"))
+        MvcResult mvcResult = mockMvc.perform(get("/accounts/4").with(httpBasic("Lucas Sánchez", "123456")))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andReturn();
 
         assertTrue(mvcResult.getResponse().getContentAsString().contains("1800.42"));
+        savings.setBalance(new Money(new BigDecimal("1500.35")));
+    }
+
+    @Test
+    void getBalance_InvalidAccountHolderRequestForCheckingAccount_StatusUnauthorized() throws Exception {
+        mockMvc.perform(get("/accounts/2").with(httpBasic("Lucas Sánchez", "123456")))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -219,20 +255,18 @@ class AccountControllerImplTest {
     }
     //endregion
 
-    //TODO: add authentication checks to tests
-
     //region store tests
     @Test
     void store_ValidCheckingAccount_StatusCreated() throws Exception {
         AccountDTO accountDTO = new AccountDTO();
         accountDTO.setAccountType(AccountType.CHECKING);
         accountDTO.setBalance(new BigDecimal("2050.34"));
-        accountDTO.setPrimaryOwner(accountHolder.getId());
+        accountDTO.setPrimaryOwner(accountHolder1.getId());
         accountDTO.setSecretKey("28733");
 
         String body = objectMapper.writeValueAsString(accountDTO);
 
-        MvcResult mvcResult = mockMvc.perform(post("/accounts")
+        MvcResult mvcResult = mockMvc.perform(post("/accounts").with(httpBasic("admin", "123456"))
                             .content(body)
                             .contentType(MediaType.APPLICATION_JSON)
                             .characterEncoding("UTF-8")
@@ -247,18 +281,15 @@ class AccountControllerImplTest {
 
     @Test
     void store_ValidCheckingWithAgeLessThan24_StatusCreated() throws Exception {
-        accountHolder.setDateOfBirth(LocalDate.of(LocalDate.now().getYear() - 22, 2, 10));
-        accountHolderRepository.save(accountHolder);
-
         AccountDTO accountDTO = new AccountDTO();
         accountDTO.setAccountType(AccountType.CHECKING);
         accountDTO.setBalance(new BigDecimal("200"));
-        accountDTO.setPrimaryOwner(accountHolder.getId());
+        accountDTO.setPrimaryOwner(accountHolder2.getId());
         accountDTO.setSecretKey("11111");
 
         String body = objectMapper.writeValueAsString(accountDTO);
 
-        MvcResult mvcResult = mockMvc.perform(post("/accounts")
+        MvcResult mvcResult = mockMvc.perform(post("/accounts").with(httpBasic("admin", "123456"))
                 .content(body)
                 .contentType(MediaType.APPLICATION_JSON)
                 .characterEncoding("UTF-8")
@@ -281,7 +312,7 @@ class AccountControllerImplTest {
 
         String body = objectMapper.writeValueAsString(accountDto);
 
-        MvcResult mvcResult = mockMvc.perform(post("/accounts")
+        MvcResult mvcResult = mockMvc.perform(post("/accounts").with(httpBasic("admin", "123456"))
                 .content(body)
                 .contentType(MediaType.APPLICATION_JSON)
                 .characterEncoding("UTF-8")
@@ -306,7 +337,7 @@ class AccountControllerImplTest {
 
         String body = objectMapper.writeValueAsString(accountDto);
 
-        MvcResult mvcResult = mockMvc.perform(post("/accounts")
+        MvcResult mvcResult = mockMvc.perform(post("/accounts").with(httpBasic("admin", "123456"))
                 .content(body)
                 .contentType(MediaType.APPLICATION_JSON)
                 .characterEncoding("UTF-8")
@@ -330,7 +361,7 @@ class AccountControllerImplTest {
 
         String body = objectMapper.writeValueAsString(accountDto);
 
-        mockMvc.perform(post("/accounts")
+        mockMvc.perform(post("/accounts").with(httpBasic("admin", "123456"))
             .content(body)
             .contentType(MediaType.APPLICATION_JSON)
             .characterEncoding("UTF-8")
@@ -348,7 +379,7 @@ class AccountControllerImplTest {
 
         String body = objectMapper.writeValueAsString(accountDto);
 
-        mockMvc.perform(post("/accounts")
+        mockMvc.perform(post("/accounts").with(httpBasic("admin", "123456"))
                 .content(body)
                 .contentType(MediaType.APPLICATION_JSON)
                 .characterEncoding("UTF-8")
@@ -366,7 +397,7 @@ class AccountControllerImplTest {
 
         String body = objectMapper.writeValueAsString(accountDto);
 
-        mockMvc.perform(post("/accounts")
+        mockMvc.perform(post("/accounts").with(httpBasic("admin", "123456"))
                 .content(body)
                 .contentType(MediaType.APPLICATION_JSON)
                 .characterEncoding("UTF-8")
@@ -384,7 +415,7 @@ class AccountControllerImplTest {
 
         String body = objectMapper.writeValueAsString(accountDto);
 
-        mockMvc.perform(post("/accounts")
+        mockMvc.perform(post("/accounts").with(httpBasic("admin", "123456"))
                 .content(body)
                 .contentType(MediaType.APPLICATION_JSON)
                 .characterEncoding("UTF-8")
@@ -403,7 +434,7 @@ class AccountControllerImplTest {
 
         String body = objectMapper.writeValueAsString(accountDto);
 
-        mockMvc.perform(post("/accounts")
+        mockMvc.perform(post("/accounts").with(httpBasic("admin", "123456"))
                 .content(body)
                 .contentType(MediaType.APPLICATION_JSON)
                 .characterEncoding("UTF-8")
@@ -420,13 +451,33 @@ class AccountControllerImplTest {
 
         String body = objectMapper.writeValueAsString(accountDto);
 
-        mockMvc.perform(post("/accounts")
+        mockMvc.perform(post("/accounts").with(httpBasic("admin", "123456"))
                 .content(body)
                 .contentType(MediaType.APPLICATION_JSON)
                 .characterEncoding("UTF-8")
         )
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    void store_InvalidRequest_StatusUnauthorized() throws Exception {
+        AccountDTO accountDto = new AccountDTO();
+        accountDto.setAccountType(AccountType.SAVINGS);
+        accountDto.setBalance(new BigDecimal("2100"));
+        accountDto.setPrimaryOwner(1L);
+        accountDto.setSecretKey("LLLL1");
+        accountDto.setMinimumBalance(new BigDecimal("500"));
+
+        String body = objectMapper.writeValueAsString(accountDto);
+
+        mockMvc.perform(post("/accounts").with(httpBasic("Laura Reyes", "123456"))
+                .content(body)
+                .contentType(MediaType.APPLICATION_JSON)
+                .characterEncoding("UTF-8")
+        )
+                .andExpect(status().isUnauthorized());
+    }
+
     //endregion
 
     //region updateBalance tests
@@ -436,7 +487,7 @@ class AccountControllerImplTest {
         balanceDTO.setAmount(new BigDecimal("600.25"));
         String body = objectMapper.writeValueAsString(balanceDTO);
 
-        mockMvc.perform(put("/accounts/1")
+        mockMvc.perform(put("/accounts/1").with(httpBasic("admin", "123456"))
                     .content(body)
                     .contentType(MediaType.APPLICATION_JSON)
                     )
@@ -452,7 +503,7 @@ class AccountControllerImplTest {
         balanceDTO.setAmount(new BigDecimal("-100.35"));
         String body = objectMapper.writeValueAsString(balanceDTO);
 
-        mockMvc.perform(put("/accounts/1")
+        mockMvc.perform(put("/accounts/1").with(httpBasic("admin", "123456"))
                 .content(body)
                 .contentType(MediaType.APPLICATION_JSON)
         )
@@ -465,12 +516,26 @@ class AccountControllerImplTest {
         balanceDTO.setAmount(new BigDecimal("1000"));
         String body = objectMapper.writeValueAsString(balanceDTO);
 
-        mockMvc.perform(put("/accounts/200")
+        mockMvc.perform(put("/accounts/200").with(httpBasic("admin", "123456"))
                 .content(body)
                 .contentType(MediaType.APPLICATION_JSON)
         )
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    void updateBalance_InvalidRequest_StatusUnauthorized() throws Exception {
+        BalanceDTO balanceDTO = new BalanceDTO();
+        balanceDTO.setAmount(new BigDecimal("600.25"));
+        String body = objectMapper.writeValueAsString(balanceDTO);
+
+        mockMvc.perform(put("/accounts/1").with(httpBasic("Lucas Sánchez", "123456"))
+                .content(body)
+                .contentType(MediaType.APPLICATION_JSON)
+        )
+                .andExpect(status().isUnauthorized());
+    }
+
     //endregion
 
     //region receiveOrTransferMoney tests
