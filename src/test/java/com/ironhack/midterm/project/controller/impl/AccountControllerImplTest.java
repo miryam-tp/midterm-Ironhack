@@ -14,9 +14,9 @@ import com.ironhack.midterm.project.model.account.CreditCard;
 import com.ironhack.midterm.project.model.account.Savings;
 import com.ironhack.midterm.project.model.account.StudentChecking;
 import com.ironhack.midterm.project.model.users.AccountHolder;
+import com.ironhack.midterm.project.model.users.Admin;
 import com.ironhack.midterm.project.model.users.Role;
 import com.ironhack.midterm.project.model.users.ThirdParty;
-import com.ironhack.midterm.project.model.users.User;
 import com.ironhack.midterm.project.repository.*;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +32,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -47,6 +48,9 @@ class AccountControllerImplTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private AdminRepository adminRepository;
 
     @Autowired
     private AccountHolderRepository accountHolderRepository;
@@ -79,8 +83,10 @@ class AccountControllerImplTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    private Role role;
+    private Role role1;
+    private Role role2;
     private AccountHolder accountHolder;
+    private Admin admin;
     private ThirdParty thirdParty;
     private CheckingAccount checkingAccount;
     private StudentChecking studentChecking;
@@ -93,19 +99,26 @@ class AccountControllerImplTest {
     void setUp() {
         mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
 
-        role = new Role("ACCOUNTHOLDER");
-        roleRepository.save(role);
+        role1 = new Role("ACCOUNTHOLDER");
+        role2 = new Role("ADMIN");
+        roleRepository.saveAll(List.of(role1, role2));
 
         address = new Address("4B", "Sierpes", "Sevilla", "Spain");
 
         accountHolder = new AccountHolder();
         accountHolder.setName("Lucas Sánchez");
         accountHolder.setPassword(passwordEncoder.encode("123456"));
-        accountHolder.setRole(role);
+        accountHolder.setRole(role1);
         accountHolder.setDateOfBirth(LocalDate.of(1990, 10, 1));
         accountHolder.setPrimaryAddress(address);
         accountHolder.setMailingAddress(address);
         accountHolderRepository.save(accountHolder);
+
+        admin = new Admin();
+        admin.setName("admin");
+        admin.setPassword(passwordEncoder.encode("123456"));
+        admin.setRole(role2);
+        adminRepository.save(admin);
 
         thirdParty = new ThirdParty();
         thirdParty.setName("Third party");

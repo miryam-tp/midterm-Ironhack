@@ -57,6 +57,8 @@ class UserControllerImplTest {
         thirdPartyRepository.deleteAll();
     }
 
+    //TODO: Add basic auth to test
+
     @Test
     void store_ValidThirdParty_StatusCreated() throws Exception {
         UserDTO userDTO = new UserDTO();
