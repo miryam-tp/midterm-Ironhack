@@ -36,6 +36,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -99,7 +100,9 @@ class AccountControllerImplTest {
 
     @BeforeAll
     void setUp() {
-        mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
+        mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
+                .apply(springSecurity())
+                .build();
 
         role1 = new Role("ACCOUNTHOLDER");
         role2 = new Role("ADMIN");
@@ -192,11 +195,13 @@ class AccountControllerImplTest {
 
         assertTrue(mvcResult.getResponse().getContentAsString().contains("304.56"));
         checkingAccount.setBalance(new Money(new BigDecimal("340.56")));
+        checkingAccountRepository.save(checkingAccount);
     }
 
     @Test
     void getBalance_ValidAccountHolderRequestForCheckingAccount_ReturnsBalance() throws Exception {
         checkingAccount.setLastAccessed(LocalDate.now());
+        checkingAccountRepository.save(checkingAccount);
 
         MvcResult mvcResult = mockMvc.perform(get("/accounts/1").with(httpBasic("Lucas Sánchez", "123456")))
                 .andExpect(status().isOk())
@@ -227,6 +232,7 @@ class AccountControllerImplTest {
 
         assertTrue(mvcResult.getResponse().getContentAsString().contains("2060.60"));
         creditCard.setBalance(new Money(new BigDecimal("2000")));
+        creditCardRepository.save(creditCard);
     }
 
     @Test
@@ -240,17 +246,19 @@ class AccountControllerImplTest {
 
         assertTrue(mvcResult.getResponse().getContentAsString().contains("1800.42"));
         savings.setBalance(new Money(new BigDecimal("1500.35")));
+        savingsRepository.save(savings);
     }
 
     @Test
-    void getBalance_InvalidAccountHolderRequestForCheckingAccount_StatusUnauthorized() throws Exception {
+    void getBalance_InvalidAccountHolderRequestForStudentCheckingAccount_StatusUnauthorized() throws Exception {
+        //TODO: Fix authentication check in AccountServiceImpl
         mockMvc.perform(get("/accounts/2").with(httpBasic("Lucas Sánchez", "123456")))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     void getBalance_InvalidId_StatusNotFound() throws Exception {
-        mockMvc.perform(get("/accounts/0"))
+        mockMvc.perform(get("/accounts/0").with(httpBasic("admin", "123456")))
                 .andExpect(status().isNotFound());
     }
     //endregion
@@ -299,7 +307,7 @@ class AccountControllerImplTest {
                 .andReturn();
 
         assertTrue(mvcResult.getResponse().getContentAsString(StandardCharsets.UTF_8).contains("11111"));
-        assertTrue(mvcResult.getResponse().getContentAsString(StandardCharsets.UTF_8).contains("Lucas Sánchez"));
+        assertTrue(mvcResult.getResponse().getContentAsString(StandardCharsets.UTF_8).contains("Laura Reyes"));
     }
 
     @Test
@@ -460,7 +468,7 @@ class AccountControllerImplTest {
     }
 
     @Test
-    void store_InvalidRequest_StatusUnauthorized() throws Exception {
+    void store_InvalidRequest_StatusForbidden() throws Exception {
         AccountDTO accountDto = new AccountDTO();
         accountDto.setAccountType(AccountType.SAVINGS);
         accountDto.setBalance(new BigDecimal("2100"));
@@ -475,7 +483,7 @@ class AccountControllerImplTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .characterEncoding("UTF-8")
         )
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
     }
 
     //endregion
@@ -524,7 +532,7 @@ class AccountControllerImplTest {
     }
 
     @Test
-    void updateBalance_InvalidRequest_StatusUnauthorized() throws Exception {
+    void updateBalance_InvalidRequest_StatusForbidden() throws Exception {
         BalanceDTO balanceDTO = new BalanceDTO();
         balanceDTO.setAmount(new BigDecimal("600.25"));
         String body = objectMapper.writeValueAsString(balanceDTO);
@@ -533,7 +541,7 @@ class AccountControllerImplTest {
                 .content(body)
                 .contentType(MediaType.APPLICATION_JSON)
         )
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
     }
 
     //endregion
