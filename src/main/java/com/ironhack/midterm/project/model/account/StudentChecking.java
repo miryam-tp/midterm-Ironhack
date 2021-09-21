@@ -21,21 +21,6 @@ public class StudentChecking extends Account {
     @NotNull
     private Status status;
 
-//    public StudentChecking() {
-//    }
-//
-//    public StudentChecking(Long id, Money balance, AccountHolder primaryOwner, String secretKey, Status status) {
-//        super(id, balance, primaryOwner);
-//        this.secretKey = secretKey;
-//        this.status = status;
-//    }
-//
-//    public StudentChecking(Money balance, AccountHolder primaryOwner, AccountHolder secondaryOwner, String secretKey, Status status) {
-//        super(balance, primaryOwner, secondaryOwner);
-//        this.secretKey = secretKey;
-//        this.status = status;
-//    }
-
     public String getSecretKey() {
         return secretKey;
     }

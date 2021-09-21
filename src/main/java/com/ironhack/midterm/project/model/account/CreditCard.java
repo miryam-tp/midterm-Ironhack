@@ -1,11 +1,10 @@
 package com.ironhack.midterm.project.model.account;
 
-import com.ironhack.midterm.project.classes.InterestRate;
 import com.ironhack.midterm.project.classes.Money;
 
 import javax.persistence.*;
-import javax.validation.constraints.Digits;
 import javax.validation.constraints.NotNull;
+import java.math.BigDecimal;
 
 @Entity
 @PrimaryKeyJoinColumn(name = "id")
@@ -19,8 +18,7 @@ public class CreditCard extends Account {
     private Money creditLimit;
     @NotNull
     @Embedded
-//    @Digits(integer = 2, fraction = 4)
-    private InterestRate interestRate;
+    private BigDecimal interestRate;
     @NotNull
     @AttributeOverrides({
             @AttributeOverride(name = "currency", column = @Column(name = "penalty_currency")),
@@ -36,11 +34,11 @@ public class CreditCard extends Account {
         this.creditLimit = creditLimit;
     }
 
-    public InterestRate getInterestRate() {
+    public BigDecimal getInterestRate() {
         return interestRate;
     }
 
-    public void setInterestRate(InterestRate interestRate) {
+    public void setInterestRate(BigDecimal interestRate) {
         this.interestRate = interestRate;
     }
 

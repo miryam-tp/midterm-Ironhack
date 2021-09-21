@@ -1,12 +1,12 @@
 package com.ironhack.midterm.project.model.account;
 
-import com.ironhack.midterm.project.classes.InterestRate;
 import com.ironhack.midterm.project.classes.Money;
 import com.ironhack.midterm.project.enums.Status;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import java.math.BigDecimal;
 
 @Entity
 @PrimaryKeyJoinColumn(name = "id")
@@ -20,7 +20,7 @@ public class Savings extends Account {
     private Money minimumBalance;
     @NotNull
     @Embedded
-    private InterestRate interestRate;
+    private BigDecimal interestRate;
     @NotNull
     @Embedded
     @AttributeOverrides({
@@ -42,11 +42,11 @@ public class Savings extends Account {
         this.minimumBalance = minimumBalance;
     }
 
-    public InterestRate getInterestRate() {
+    public BigDecimal getInterestRate() {
         return interestRate;
     }
 
-    public void setInterestRate(InterestRate interestRate) {
+    public void setInterestRate(BigDecimal interestRate) {
         this.interestRate = interestRate;
     }
 

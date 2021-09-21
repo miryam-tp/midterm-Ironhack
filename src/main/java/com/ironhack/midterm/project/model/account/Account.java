@@ -30,23 +30,8 @@ public abstract class Account {
     private AccountHolder secondaryOwner;
     @NotNull
     private LocalDate creationDate;
-
-//    public Account() {
-//    }
-//
-//    public Account(Long id, Money balance, AccountHolder primaryOwner) {
-//        this.id = id;
-//        this.balance = balance;
-//        this.primaryOwner = primaryOwner;
-//        this.creationDate = LocalDate.now(Clock.systemDefaultZone());
-//    }
-//
-//    public Account(Money balance, AccountHolder primaryOwner, AccountHolder secondaryOwner) {
-//        this.balance = balance;
-//        this.primaryOwner = primaryOwner;
-//        this.secondaryOwner = secondaryOwner;
-//        this.creationDate = LocalDate.now(Clock.systemDefaultZone());
-//    }
+    @NotNull
+    private LocalDate lastAccessed;
 
     public Long getId() {
         return id;
@@ -86,5 +71,13 @@ public abstract class Account {
 
     public void setCreationDate(LocalDate creationDate) {
         this.creationDate = creationDate;
+    }
+
+    public LocalDate getLastAccessed() {
+        return lastAccessed;
+    }
+
+    public void setLastAccessed(LocalDate lastAccessed) {
+        this.lastAccessed = lastAccessed;
     }
 }

@@ -2,7 +2,6 @@ package com.ironhack.midterm.project.controller.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ironhack.midterm.project.classes.Address;
-import com.ironhack.midterm.project.classes.InterestRate;
 import com.ironhack.midterm.project.classes.Money;
 import com.ironhack.midterm.project.controller.dto.AccountDTO;
 import com.ironhack.midterm.project.controller.dto.BalanceDTO;
@@ -35,6 +34,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -148,11 +148,8 @@ class AccountControllerImplTest {
         creditCard.setBalance(new Money(new BigDecimal("2000")));
         creditCard.setPrimaryOwner(accountHolder);
         creditCard.setCreationDate(LocalDate.now());
-        creditCard.setInterestRate(new InterestRate(
-                new BigDecimal("0.12"),
-                LocalDate.of(LocalDate.now().getYear(), LocalDate.now().getMonthValue() - 3, LocalDate.now().getDayOfMonth())
-                )
-        );
+        creditCard.setLastAccessed(LocalDate.of(LocalDate.now().getYear(), LocalDate.now().getMonthValue() - 3, LocalDate.now().getDayOfMonth()));
+        creditCard.setInterestRate(new BigDecimal("0.12"));
         creditCard.setCreditLimit(new Money(new BigDecimal("500")));
         creditCard.setPenaltyFee(new Money(new BigDecimal("40")));
         creditCardRepository.save(creditCard);
@@ -161,22 +158,19 @@ class AccountControllerImplTest {
         savings.setBalance(new Money(new BigDecimal("1500.35")));
         savings.setPrimaryOwner(accountHolder);
         savings.setCreationDate(LocalDate.now());
+        savings.setLastAccessed(LocalDate.of(LocalDate.now().getYear() - 1, LocalDate.now().getMonthValue(), LocalDate.now().getDayOfMonth()));
         savings.setSecretKey("123456");
         savings.setStatus(Status.ACTIVE);
         savings.setPenaltyFee(new Money(new BigDecimal("40")));
         savings.setMinimumBalance(new Money(new BigDecimal("1000")));
-        savings.setInterestRate(new InterestRate(
-                        new BigDecimal("0.2"),
-                        LocalDate.of(LocalDate.now().getYear() - 1, LocalDate.now().getMonthValue(), LocalDate.now().getDayOfMonth())
-                )
-        );
+        savings.setInterestRate(new BigDecimal("0.2"));
         savingsRepository.save(savings);
     }
 
     //region getBalance tests
     @Test
     void getBalance_ValidRequestForCheckingAccount_ReturnsBalance() throws Exception {
-        MvcResult mvcResult = mockMvc.perform(get("/accounts/1"))
+        MvcResult mvcResult = mockMvc.perform(get("/accounts/1").with(httpBasic("admin", "123456")))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andReturn();

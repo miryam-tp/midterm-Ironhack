@@ -1,6 +1,5 @@
 package com.ironhack.midterm.project.service.impl;
 
-import com.ironhack.midterm.project.classes.InterestRate;
 import com.ironhack.midterm.project.classes.Money;
 import com.ironhack.midterm.project.controller.dto.AccountDTO;
 import com.ironhack.midterm.project.controller.dto.BalanceDTO;
@@ -12,6 +11,8 @@ import com.ironhack.midterm.project.repository.*;
 import com.ironhack.midterm.project.service.interfaces.AccountService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -47,10 +48,14 @@ public class AccountServiceImpl implements AccountService {
     //TODO: Find way to apply monthly maintenance fees to Checking Accounts
 
     public BalanceDTO getBalance(Long id) {
-        //TODO: Validate user admin or account holder. If account holder, validate account owner
-
         Account account = accountRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Account with id " + id + " not found"));
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if(auth != null && auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ACCOUNTHOLDER"))) {
+            if(!auth.getName().equals(account.getPrimaryOwner().getName()) || !auth.getName().equals(account.getSecondaryOwner().getName()))
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
 
         BalanceDTO balance = new BalanceDTO();
         BigDecimal currentBalance = account.getBalance().getAmount();
@@ -58,11 +63,11 @@ public class AccountServiceImpl implements AccountService {
         if(account instanceof Savings) {
             Savings savings = savingsRepository.findById(id).get();
             int currentYear = LocalDate.now().getYear();
-            int lastInterestYear = savings.getInterestRate().getLastInterest().getYear();
+            int lastInterestYear = savings.getLastAccessed().getYear();
             int yearsPassed = currentYear - lastInterestYear;
 
             if(yearsPassed > 0) {  //Interest applies annually in Savings accounts
-                BigDecimal interest = savings.getInterestRate().getInterest();
+                BigDecimal interest = savings.getInterestRate();
 
                 //For each year passed since the last time the account was accessed, we apply the interest rate
                 for (int i = 0; i < yearsPassed ; i++) {
@@ -71,7 +76,7 @@ public class AccountServiceImpl implements AccountService {
                 }
 
                 //Set the date of the last interest to the current date
-                savings.getInterestRate().setLastInterest(LocalDate.now());
+                savings.setLastAccessed(LocalDate.now());
                 savings.setBalance(new Money(currentBalance));
 //                accountRepository.save(savings);
                 savingsRepository.save(savings);
@@ -81,12 +86,12 @@ public class AccountServiceImpl implements AccountService {
 
             int currentYear = LocalDate.now().getYear();
             int currentMonth = LocalDate.now().getMonthValue();
-            int lastInterestYear = creditCard.getInterestRate().getLastInterest().getYear();
-            int lastInterestMonth = creditCard.getInterestRate().getLastInterest().getMonthValue();
+            int lastInterestYear = creditCard.getLastAccessed().getYear();
+            int lastInterestMonth = creditCard.getLastAccessed().getMonthValue();
 
             //Interest applies monthly in Credit Card accounts
             if(currentYear - lastInterestYear > 0 || currentMonth - lastInterestMonth > 0) {
-                BigDecimal monthlyInterest = creditCard.getInterestRate().getInterest().divide(new BigDecimal("12"));
+                BigDecimal monthlyInterest = creditCard.getInterestRate().divide(new BigDecimal("12"));
                 int monthsPassed = (currentYear - lastInterestYear) * 12 + currentMonth - lastInterestMonth;
 
                 //For each month passed since the last time the account was accessed, we apply the interest rate
@@ -96,10 +101,17 @@ public class AccountServiceImpl implements AccountService {
                 }
 
                 //Set the date of the last interest to the current date
-                creditCard.getInterestRate().setLastInterest(LocalDate.now());
+                creditCard.setLastAccessed(LocalDate.now());
                 creditCard.setBalance(new Money(currentBalance));
                 creditCardRepository.save(creditCard);
             }
+        } else if(account instanceof CheckingAccount) {
+            CheckingAccount checkingAccount = checkingAccountRepository.findById(id).get();
+
+            int currentYear = LocalDate.now().getYear();
+            int currentMonth = LocalDate.now().getMonthValue();
+            int lastInterestYear = checkingAccount.getLastAccessed().getYear();
+            int lastInterestMonth = checkingAccount.getLastAccessed().getMonthValue();
         }
 
         balance.setAmount(currentBalance.setScale(2, RoundingMode.HALF_EVEN));
@@ -127,6 +139,7 @@ public class AccountServiceImpl implements AccountService {
                     );
                 }
                 creditCard.setCreationDate(LocalDate.now());
+                creditCard.setLastAccessed(LocalDate.now());
 
                 //Setting specific CreditCard properties
                 if(accountDto.getCreditLimit() == null)
@@ -138,13 +151,12 @@ public class AccountServiceImpl implements AccountService {
                 }
 
                 if(accountDto.getInterestRate() == null)
-                    creditCard.setInterestRate(new InterestRate(new BigDecimal("0.2")));
+                    creditCard.setInterestRate(new BigDecimal("0.2"));
                 else {
                     if(accountDto.getInterestRate().compareTo(new BigDecimal("0.1")) < 0)
-                        creditCard.setInterestRate(new InterestRate(new BigDecimal("0.2")));
-                    else creditCard.setInterestRate(new InterestRate(accountDto.getInterestRate()));
+                        creditCard.setInterestRate(new BigDecimal("0.2"));
+                    else creditCard.setInterestRate(accountDto.getInterestRate());
                 }
-                creditCard.getInterestRate().setLastInterest(LocalDate.now());
 
                 creditCard.setPenaltyFee(new Money(new BigDecimal(40)));
 
@@ -165,6 +177,7 @@ public class AccountServiceImpl implements AccountService {
                         );
                     }
                     studentChecking.setCreationDate(LocalDate.now());
+                    studentChecking.setLastAccessed(LocalDate.now());
 
                     //Setting specific StudentChecking properties
                     if(accountDto.getSecretKey() == null)
@@ -187,6 +200,7 @@ public class AccountServiceImpl implements AccountService {
                         );
                     }
                     checkingAccount.setCreationDate(LocalDate.now());
+                    checkingAccount.setLastAccessed(LocalDate.now());
 
                     //Setting specific CheckingAccount properties
                     if(accountDto.getSecretKey() == null)
@@ -213,6 +227,7 @@ public class AccountServiceImpl implements AccountService {
                     );
                 }
                 savings.setCreationDate(LocalDate.now());
+                savings.setLastAccessed(LocalDate.now());
 
                 //Setting specific Savings properties
                 if(accountDto.getSecretKey() == null)
@@ -227,13 +242,13 @@ public class AccountServiceImpl implements AccountService {
                 }
 
                 if(accountDto.getInterestRate() == null)
-                    savings.setInterestRate(new InterestRate(new BigDecimal("0.0025")));
+                    savings.setInterestRate(new BigDecimal("0.0025"));
                 else {
                     if(accountDto.getInterestRate().compareTo(new BigDecimal("0.5")) > 0)
-                        savings.setInterestRate(new InterestRate(new BigDecimal("0.0025")));
-                    else savings.setInterestRate(new InterestRate(accountDto.getInterestRate()));
+                        savings.setInterestRate(new BigDecimal("0.0025"));
+                    else savings.setInterestRate(accountDto.getInterestRate());
                 }
-                savings.getInterestRate().setLastInterest(LocalDate.now());
+                savings.setLastAccessed(LocalDate.now());
 
                 savings.setPenaltyFee(new Money(new BigDecimal(40)));
                 savings.setStatus(Status.ACTIVE);
