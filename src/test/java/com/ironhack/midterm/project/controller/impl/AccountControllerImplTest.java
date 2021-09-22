@@ -784,5 +784,119 @@ class AccountControllerImplTest {
         creditCard.setBalance(new Money(new BigDecimal("2000")));
         creditCardRepository.save(creditCard);
     }
+
+    @Test
+    void transfer_InvalidTargetAccount_StatusNotFound() throws Exception {
+        TransferDTO transferDto = new TransferDTO();
+        transferDto.setTargetAccount(100L);
+        transferDto.setAmount(new BigDecimal("100"));
+        transferDto.setOriginAccount(checkingAccount.getId());
+        transferDto.setAccountOwner("Laura Reyes");
+
+        String body = objectMapper.writeValueAsString(transferDto);
+
+        mockMvc.perform(put("/accounts/transfer").with(httpBasic("Lucas Sánchez", "123456"))
+                .content(body)
+                .contentType(MediaType.APPLICATION_JSON)
+                .characterEncoding("UTF-8")
+        )
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void transfer_InvalidOriginAccount_StatusNotFound() throws Exception {
+        TransferDTO transferDto = new TransferDTO();
+        transferDto.setTargetAccount(studentChecking.getId());
+        transferDto.setAmount(new BigDecimal("100"));
+        transferDto.setOriginAccount(2222L);
+        transferDto.setAccountOwner("Laura Reyes");
+
+        String body = objectMapper.writeValueAsString(transferDto);
+
+        mockMvc.perform(put("/accounts/transfer").with(httpBasic("Lucas Sánchez", "123456"))
+                .content(body)
+                .contentType(MediaType.APPLICATION_JSON)
+                .characterEncoding("UTF-8")
+        )
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void transfer_NegativeTransferAmount_StatusBadRequest() throws Exception {
+        TransferDTO transferDto = new TransferDTO();
+        transferDto.setTargetAccount(studentChecking.getId());
+        transferDto.setAmount(new BigDecimal("-200"));
+        transferDto.setOriginAccount(checkingAccount.getId());
+        transferDto.setAccountOwner("Laura Reyes");
+
+        String body = objectMapper.writeValueAsString(transferDto);
+
+        mockMvc.perform(put("/accounts/transfer").with(httpBasic("Lucas Sánchez", "123456"))
+                .content(body)
+                .contentType(MediaType.APPLICATION_JSON)
+                .characterEncoding("UTF-8")
+        )
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void transfer_InvalidUser_StatusForbidden() throws Exception {
+        TransferDTO transferDto = new TransferDTO();
+        transferDto.setTargetAccount(studentChecking.getId());
+        transferDto.setAmount(new BigDecimal("100"));
+        transferDto.setOriginAccount(checkingAccount.getId());
+        transferDto.setAccountOwner("Laura Reyes");
+
+        String body = objectMapper.writeValueAsString(transferDto);
+
+        mockMvc.perform(put("/accounts/transfer").with(httpBasic("Laura Reyes", "123456"))
+                .content(body)
+                .contentType(MediaType.APPLICATION_JSON)
+                .characterEncoding("UTF-8")
+        )
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void transfer_InvalidTargetAccountOwner_StatusBadRequest() throws Exception {
+        TransferDTO transferDto = new TransferDTO();
+        transferDto.setTargetAccount(studentChecking.getId());
+        transferDto.setAmount(new BigDecimal("100"));
+        transferDto.setOriginAccount(checkingAccount.getId());
+        transferDto.setAccountOwner("Laura");
+
+        String body = objectMapper.writeValueAsString(transferDto);
+
+        mockMvc.perform(put("/accounts/transfer").with(httpBasic("Lucas Sánchez", "123456"))
+                .content(body)
+                .contentType(MediaType.APPLICATION_JSON)
+                .characterEncoding("UTF-8")
+        )
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void transfer_InsufficientFundsInOriginAccount_StatusUnprocessableEntity() throws Exception {
+        checkingAccount.setBalance(new Money(new BigDecimal("40.53")));
+        checkingAccountRepository.save(checkingAccount);
+
+        TransferDTO transferDto = new TransferDTO();
+        transferDto.setTargetAccount(studentChecking.getId());
+        transferDto.setAmount(new BigDecimal("100"));
+        transferDto.setOriginAccount(checkingAccount.getId());
+        transferDto.setAccountOwner("Laura Reyes");
+
+        String body = objectMapper.writeValueAsString(transferDto);
+
+        mockMvc.perform(put("/accounts/transfer").with(httpBasic("Lucas Sánchez", "123456"))
+                .content(body)
+                .contentType(MediaType.APPLICATION_JSON)
+                .characterEncoding("UTF-8")
+        )
+                .andExpect(status().isUnprocessableEntity());
+
+        checkingAccount.setBalance(new Money(new BigDecimal("340.56")));
+        checkingAccountRepository.save(checkingAccount);
+    }
     //endregion
 }
