@@ -119,7 +119,7 @@ public class AccountServiceImpl implements AccountService {
                 //For each month passed since the last time the account was accessed, we apply the interest rate
                 for(int i = 0; i < monthsPassed; i++) {
                     BigDecimal fees = currentBalance.multiply(monthlyInterest);
-                    currentBalance = currentBalance.add(fees);
+                    currentBalance = currentBalance.subtract(fees);
                 }
 
                 creditCard.setLastAccessed(LocalDate.now());
@@ -421,52 +421,48 @@ public class AccountServiceImpl implements AccountService {
         }
 
         //Check origin account's funds
-        if(originAccount.getBalance().getAmount().compareTo(transferDto.getAmount()) < 0)
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Insufficient funds in origin account");
+        if(!(originAccount instanceof CreditCard)) {
+            if(originAccount.getBalance().getAmount().compareTo(transferDto.getAmount()) < 0)
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Insufficient funds in origin account");
+        }
 
         //Process the transfer in the target account
+        BigDecimal newBalance;
         if(targetAccount instanceof CreditCard) {
             //Transferring money to a credit card account decreases its balance
-            BigDecimal newBalance = targetAccount.getBalance().getAmount().subtract(transferDto.getAmount());
-            targetAccount.setBalance(new Money(newBalance));
+            newBalance = targetAccount.getBalance().getAmount().subtract(transferDto.getAmount());
         } else {
-            BigDecimal newBalance = targetAccount.getBalance().getAmount().add(transferDto.getAmount());
+            newBalance = targetAccount.getBalance().getAmount().add(transferDto.getAmount());
         }
-        //Save the updated account
+        targetAccount.setBalance(new Money(newBalance));
         accountRepository.save(targetAccount);
 
         //Process the transfer in the origin account
         if(originAccount instanceof CreditCard) {
             //Transferring money from a credit card account will increase its balance
-            BigDecimal newBalance = originAccount.getBalance().getAmount().add(transferDto.getAmount());
+            newBalance = originAccount.getBalance().getAmount().add(transferDto.getAmount());
 
             //Check if new balance is higher than the account's credit limit
-            if(newBalance.compareTo(((CreditCard) originAccount).getCreditLimit().getAmount()) > 1)
+            if(newBalance.compareTo(((CreditCard) originAccount).getCreditLimit().getAmount()) > 0)
                 newBalance = newBalance.add(((CreditCard) originAccount).getPenaltyFee().getAmount());
-
-            originAccount.setBalance(new Money(newBalance));
         } else if (originAccount instanceof StudentChecking){
             //Student Checking accounts do not have minimum balance
-            BigDecimal newBalance = originAccount.getBalance().getAmount().subtract(transferDto.getAmount());
-            originAccount.setBalance(new Money(newBalance));
+            newBalance = originAccount.getBalance().getAmount().subtract(transferDto.getAmount());
         } else if (originAccount instanceof Savings){
-            BigDecimal newBalance = originAccount.getBalance().getAmount().subtract(transferDto.getAmount());
+            newBalance = originAccount.getBalance().getAmount().subtract(transferDto.getAmount());
 
             //Check if new balance is lower than minimum balance
             if(newBalance.compareTo(((Savings) originAccount).getMinimumBalance().getAmount()) < 0)
                 newBalance = newBalance.add(((Savings) originAccount).getPenaltyFee().getAmount());
-
-            originAccount.setBalance(new Money(newBalance));
         } else if (originAccount instanceof CheckingAccount) {
-            BigDecimal newBalance = originAccount.getBalance().getAmount().subtract(transferDto.getAmount());
+            newBalance = originAccount.getBalance().getAmount().subtract(transferDto.getAmount());
 
             //Check if new balance is lower than minimum balance
             if(newBalance.compareTo(((CheckingAccount) originAccount).getMinimumBalance().getAmount()) < 0)
-                newBalance = newBalance.add(((CheckingAccount) originAccount).getPenaltyFee().getAmount());
-
-            originAccount.setBalance(new Money(newBalance));
+                newBalance = newBalance.subtract(((CheckingAccount) originAccount).getPenaltyFee().getAmount());
         }
         //Save the updated account
+        originAccount.setBalance(new Money(newBalance));
         accountRepository.save(originAccount);
     }
 }

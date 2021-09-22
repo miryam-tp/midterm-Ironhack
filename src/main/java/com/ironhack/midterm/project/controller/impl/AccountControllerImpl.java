@@ -48,7 +48,7 @@ public class AccountControllerImpl implements AccountController {
         accountService.receiveOrTransferMoney(optionalHashedKey, transferDto);
     }
 
-    @PutMapping("/accounts")
+    @PutMapping("/accounts/transfer")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void transferMoney(@RequestBody @Valid TransferDTO transferDto) {
         accountService.transferMoney(transferDto);

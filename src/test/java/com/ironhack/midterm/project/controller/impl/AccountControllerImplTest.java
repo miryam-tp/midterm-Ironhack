@@ -22,6 +22,8 @@ import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -35,6 +37,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -85,8 +88,8 @@ class AccountControllerImplTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    private Role role1;
-    private Role role2;
+    private Role roleHolder;
+    private Role roleAdmin;
     private AccountHolder accountHolder1;
     private AccountHolder accountHolder2;
     private Admin admin;
@@ -104,16 +107,16 @@ class AccountControllerImplTest {
                 .apply(springSecurity())
                 .build();
 
-        role1 = new Role("ACCOUNTHOLDER");
-        role2 = new Role("ADMIN");
-        roleRepository.saveAll(List.of(role1, role2));
+        roleHolder = new Role("ACCOUNTHOLDER");
+        roleAdmin = new Role("ADMIN");
+        roleRepository.saveAll(List.of(roleHolder, roleAdmin));
 
         address = new Address("4B", "Sierpes", "Sevilla", "Spain");
 
         accountHolder1 = new AccountHolder();
         accountHolder1.setName("Lucas Sánchez");
         accountHolder1.setPassword(passwordEncoder.encode("123456"));
-        accountHolder1.setRole(role1);
+        accountHolder1.setRole(roleHolder);
         accountHolder1.setDateOfBirth(LocalDate.of(1990, 10, 1));
         accountHolder1.setPrimaryAddress(address);
         accountHolder1.setMailingAddress(address);
@@ -122,7 +125,7 @@ class AccountControllerImplTest {
         accountHolder2 = new AccountHolder();
         accountHolder2.setName("Laura Reyes");
         accountHolder2.setPassword(passwordEncoder.encode("123456"));
-        accountHolder2.setRole(role1);
+        accountHolder2.setRole(roleHolder);
         accountHolder2.setDateOfBirth(LocalDate.of(LocalDate.now().getYear() - 22, 3, 25));
         accountHolder2.setPrimaryAddress(address);
         accountHolder2.setMailingAddress(address);
@@ -131,7 +134,7 @@ class AccountControllerImplTest {
         admin = new Admin();
         admin.setName("admin");
         admin.setPassword(passwordEncoder.encode("123456"));
-        admin.setRole(role2);
+        admin.setRole(roleAdmin);
         adminRepository.save(admin);
 
         thirdParty = new ThirdParty();
@@ -583,6 +586,8 @@ class AccountControllerImplTest {
     @Test
     void receiveOrTransferMoney_ValidReceiveRequest_StatusNoContent() throws Exception {
         savings.setBalance(new Money(new BigDecimal("1500.35")));
+        savingsRepository.save(savings);
+
         TransferDTO transferDto = new TransferDTO();
         transferDto.setTargetAccount(4L);
         transferDto.setAmount(new BigDecimal("-50.35"));
@@ -599,6 +604,7 @@ class AccountControllerImplTest {
 
         assertEquals(new BigDecimal("1450.00"), savingsRepository.findById(4L).get().getBalance().getAmount().setScale(2, RoundingMode.HALF_EVEN));
         savings.setBalance(new Money(new BigDecimal("1500.35")));
+        savingsRepository.save(savings);
     }
 
     @Test
@@ -683,6 +689,103 @@ class AccountControllerImplTest {
                 .contentType(MediaType.APPLICATION_JSON)
         )
                 .andExpect(status().isUnprocessableEntity());
+    }
+    //endregion
+
+    //region transfer tests
+    @Test
+    void transfer_ValidRequestCheckingToStudent_StatusNoContent() throws Exception {
+        checkingAccount.setBalance(new Money(new BigDecimal("340.56")));
+        checkingAccountRepository.save(checkingAccount);
+        studentChecking.setBalance(new Money(new BigDecimal("660.7")));
+        studentCheckingRepository.save(studentChecking);
+
+        TransferDTO transferDto = new TransferDTO();
+        transferDto.setTargetAccount(studentChecking.getId());
+        transferDto.setAmount(new BigDecimal("100"));
+        transferDto.setOriginAccount(checkingAccount.getId());
+        transferDto.setAccountOwner("Laura Reyes");
+
+        String body = objectMapper.writeValueAsString(transferDto);
+
+        mockMvc.perform(put("/accounts/transfer").with(httpBasic("Lucas Sánchez", "123456"))
+                .content(body)
+                .contentType(MediaType.APPLICATION_JSON)
+                .characterEncoding("UTF-8")
+        )
+                .andExpect(status().isNoContent());
+
+        //Checking account will go below minimum balance and penalty fees will be applied
+        assertEquals(new BigDecimal("200.56"), checkingAccountRepository.findById(checkingAccount.getId()).get().getBalance().getAmount().setScale(2, RoundingMode.HALF_EVEN));
+        assertEquals(new BigDecimal("760.70"), studentCheckingRepository.findById(studentChecking.getId()).get().getBalance().getAmount().setScale(2, RoundingMode.HALF_EVEN));
+
+        checkingAccount.setBalance(new Money(new BigDecimal("340.56")));
+        checkingAccountRepository.save(checkingAccount);
+        studentChecking.setBalance(new Money(new BigDecimal("660.7")));
+        studentCheckingRepository.save(studentChecking);
+    }
+
+    @Test
+    void transfer_ValidRequestStudentToCreditCard_StatusNoContent() throws Exception {
+        studentChecking.setBalance(new Money(new BigDecimal("660.7")));
+        studentCheckingRepository.save(studentChecking);
+        creditCard.setBalance(new Money(new BigDecimal("2000")));
+        creditCardRepository.save(creditCard);
+
+        TransferDTO transferDto = new TransferDTO();
+        transferDto.setTargetAccount(creditCard.getId());
+        transferDto.setAmount(new BigDecimal("200"));
+        transferDto.setOriginAccount(studentChecking.getId());
+        transferDto.setAccountOwner("Lucas Sánchez");
+
+        String body = objectMapper.writeValueAsString(transferDto);
+
+        mockMvc.perform(put("/accounts/transfer").with(httpBasic("Laura Reyes", "123456"))
+                .content(body)
+                .contentType(MediaType.APPLICATION_JSON)
+                .characterEncoding("UTF-8")
+        )
+                .andExpect(status().isNoContent());
+
+        assertEquals(new BigDecimal("460.70"), studentCheckingRepository.findById(studentChecking.getId()).get().getBalance().getAmount().setScale(2, RoundingMode.HALF_EVEN));
+        assertEquals(new BigDecimal("1800.00"), creditCardRepository.findById(creditCard.getId()).get().getBalance().getAmount().setScale(2, RoundingMode.HALF_EVEN));
+
+        studentChecking.setBalance(new Money(new BigDecimal("660.7")));
+        studentCheckingRepository.save(studentChecking);
+        creditCard.setBalance(new Money(new BigDecimal("2000")));
+        creditCardRepository.save(creditCard);
+    }
+
+    @Test
+    void transfer_ValidRequestCreditCardToSavings_StatusNoContent() throws Exception {
+        creditCard.setBalance(new Money(new BigDecimal("2000")));
+        creditCardRepository.save(creditCard);
+        savings.setBalance(new Money(new BigDecimal("1500.35")));
+        savingsRepository.save(savings);
+
+        TransferDTO transferDto = new TransferDTO();
+        transferDto.setTargetAccount(savings.getId());
+        transferDto.setAmount(new BigDecimal("2500"));
+        transferDto.setOriginAccount(creditCard.getId());
+        transferDto.setAccountOwner("Lucas Sánchez");
+
+        String body = objectMapper.writeValueAsString(transferDto);
+
+        mockMvc.perform(put("/accounts/transfer").with(httpBasic("Lucas Sánchez", "123456"))
+                .content(body)
+                .contentType(MediaType.APPLICATION_JSON)
+                .characterEncoding("UTF-8")
+        )
+                .andExpect(status().isNoContent());
+
+        //Credit card balance is higher than credit limit and penalty fees apply
+        assertEquals(new BigDecimal("4540.00"), creditCardRepository.findById(creditCard.getId()).get().getBalance().getAmount().setScale(2, RoundingMode.HALF_EVEN));
+        assertEquals(new BigDecimal("4000.35"), savingsRepository.findById(savings.getId()).get().getBalance().getAmount().setScale(2, RoundingMode.HALF_EVEN));
+
+        studentChecking.setBalance(new Money(new BigDecimal("660.7")));
+        studentCheckingRepository.save(studentChecking);
+        creditCard.setBalance(new Money(new BigDecimal("2000")));
+        creditCardRepository.save(creditCard);
     }
     //endregion
 }
