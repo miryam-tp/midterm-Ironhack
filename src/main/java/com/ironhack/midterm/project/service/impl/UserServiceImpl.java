@@ -5,6 +5,7 @@ import com.ironhack.midterm.project.model.users.AccountHolder;
 import com.ironhack.midterm.project.model.users.ThirdParty;
 import com.ironhack.midterm.project.model.users.User;
 import com.ironhack.midterm.project.repository.AccountHolderRepository;
+import com.ironhack.midterm.project.repository.RoleRepository;
 import com.ironhack.midterm.project.repository.ThirdPartyRepository;
 import com.ironhack.midterm.project.service.interfaces.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +24,9 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private AccountHolderRepository accountHolderRepository;
+
+    @Autowired
+    private RoleRepository roleRepository;
 
     public User store(UserDTO userDto) {
         if(userDto.getHashedKey() != null) {
@@ -49,9 +53,8 @@ public class UserServiceImpl implements UserService {
             if(userDto.getMailingAddress() != null) accountHolder.setMailingAddress(userDto.getMailingAddress());
             else throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
 
-            //TODO: Set ROLE to AccountHolder
+            accountHolder.setRole(roleRepository.findById(1L).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Role not found")));
 
-//            accountHolder.setAccountList(new ArrayList<>());
             return accountHolderRepository.save(accountHolder);
         }
     }

@@ -10,10 +10,10 @@ public class TransferDTO {
     @NotNull
     private BigDecimal amount;
 
-    //Only thirdparty
+    //Only thirdparty request
     private String secretKey;
 
-    //Only accountholder
+    //Only accountholder request
     private Long originAccount;
     private String accountOwner;
 

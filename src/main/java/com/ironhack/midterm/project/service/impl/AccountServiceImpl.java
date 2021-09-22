@@ -52,6 +52,7 @@ public class AccountServiceImpl implements AccountService {
         Account account = accountRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Account with id " + id + " not found"));
 
+        //TODO: Refactor this verification into a separate method
         //Check user authorities
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Object principal = auth.getPrincipal();
@@ -60,7 +61,7 @@ public class AccountServiceImpl implements AccountService {
             String username = ((CustomUserDetails)principal).getUsername();
             if(auth != null && auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().contains("ACCOUNTHOLDER"))) {
                 if(account.getSecondaryOwner() != null) {
-                    if(!username.equals(account.getPrimaryOwner().getName()) || !username.equals(account.getSecondaryOwner().getName()))
+                    if(!username.equals(account.getPrimaryOwner().getName()) && !username.equals(account.getSecondaryOwner().getName()))
                         throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
                 } else {
                     if(!username.equals(account.getPrimaryOwner().getName()))
@@ -71,7 +72,7 @@ public class AccountServiceImpl implements AccountService {
             String username = principal.toString();
             if(auth != null && auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().contains("ACCOUNTHOLDER"))) {
                 if(account.getSecondaryOwner() != null) {
-                    if(!username.equals(account.getPrimaryOwner().getName()) || !username.equals(account.getSecondaryOwner().getName()))
+                    if(!username.equals(account.getPrimaryOwner().getName()) && !username.equals(account.getSecondaryOwner().getName()))
                         throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
                 } else {
                     if(!username.equals(account.getPrimaryOwner().getName()))
@@ -385,10 +386,34 @@ public class AccountServiceImpl implements AccountService {
         if(transferDto.getAmount().compareTo(new BigDecimal(0)) < 1)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Transfer amount cannot be zero or less than zero");
 
+        //TODO: Refactor this verification into a separate method
+        //Check origin account's owner
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        if(principal instanceof UserDetails) {
+            String username = ((CustomUserDetails)principal).getUsername();
+                if(originAccount.getSecondaryOwner() != null) {
+                    if(!username.equals(originAccount.getPrimaryOwner().getName()) && !username.equals(originAccount.getSecondaryOwner().getName()))
+                        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+                } else {
+                    if(!username.equals(originAccount.getPrimaryOwner().getName()))
+                        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+                }
+        } else {
+            String username = principal.toString();
+                if(originAccount.getSecondaryOwner() != null) {
+                    if(!username.equals(originAccount.getPrimaryOwner().getName()) && !username.equals(originAccount.getSecondaryOwner().getName()))
+                        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+                } else {
+                    if(!username.equals(originAccount.getPrimaryOwner().getName()))
+                        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+                }
+        }
+
         //Check target account's owner
         String accountOwner = transferDto.getAccountOwner();
         if(targetAccount.getSecondaryOwner() != null) {
-            if(!accountOwner.equals(targetAccount.getPrimaryOwner().getName()) || !accountOwner.equals(targetAccount.getSecondaryOwner().getName()))
+            if(!accountOwner.equals(targetAccount.getPrimaryOwner().getName()) && !accountOwner.equals(targetAccount.getSecondaryOwner().getName()))
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Account owner name is not valid");
         } else {
             if(!accountOwner.equals(targetAccount.getPrimaryOwner().getName()))
