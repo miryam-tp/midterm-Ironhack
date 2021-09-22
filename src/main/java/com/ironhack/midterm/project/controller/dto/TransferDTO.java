@@ -14,7 +14,7 @@ public class TransferDTO {
     private String secretKey;
 
     //Only accountholder
-    private Long fromAccount;
+    private Long originAccount;
     private String accountOwner;
 
     public Long getTargetAccount() {
@@ -41,12 +41,12 @@ public class TransferDTO {
         this.secretKey = secretKey;
     }
 
-    public Long getFromAccount() {
-        return fromAccount;
+    public Long getOriginAccount() {
+        return originAccount;
     }
 
-    public void setFromAccount(Long fromAccount) {
-        this.fromAccount = fromAccount;
+    public void setOriginAccount(Long originAccount) {
+        this.originAccount = originAccount;
     }
 
     public String getAccountOwner() {
