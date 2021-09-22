@@ -9,6 +9,7 @@ import com.ironhack.midterm.project.enums.Status;
 import com.ironhack.midterm.project.model.account.*;
 import com.ironhack.midterm.project.model.users.AccountHolder;
 import com.ironhack.midterm.project.repository.*;
+import com.ironhack.midterm.project.security.CustomUserDetails;
 import com.ironhack.midterm.project.service.interfaces.AccountService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -51,25 +52,33 @@ public class AccountServiceImpl implements AccountService {
         Account account = accountRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Account with id " + id + " not found"));
 
-        //TODO: Fix authentication check
-//        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-//        Object principal = auth.getPrincipal();
-//
-//        if(principal instanceof UserDetails) {
-//            String username = ((UserDetails)principal).getUsername();
-//
-//            if(principal != null && ((UserDetails)principal).getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ACCOUNTHOLDER"))) {
-//                if(!username.equals(account.getPrimaryOwner().getName()) || !username.equals(account.getSecondaryOwner().getName()))
-//                    throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
-//            }
-//        } else {
-//            throw new ResponseStatusException(HttpStatus.I_AM_A_TEAPOT);
-//        }
+        //Check user authorities
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        Object principal = auth.getPrincipal();
 
-//        if(auth != null && auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ACCOUNTHOLDER"))) {
-//            if(!auth.getName().equals(account.getPrimaryOwner().getName()) || !auth.getName().equals(account.getSecondaryOwner().getName()))
-//                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
-//        }
+        if(principal instanceof UserDetails) {
+            String username = ((CustomUserDetails)principal).getUsername();
+            if(auth != null && auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().contains("ACCOUNTHOLDER"))) {
+                if(account.getSecondaryOwner() != null) {
+                    if(!username.equals(account.getPrimaryOwner().getName()) || !username.equals(account.getSecondaryOwner().getName()))
+                        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+                } else {
+                    if(!username.equals(account.getPrimaryOwner().getName()))
+                        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+                }
+            }
+        } else {
+            String username = principal.toString();
+            if(auth != null && auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().contains("ACCOUNTHOLDER"))) {
+                if(account.getSecondaryOwner() != null) {
+                    if(!username.equals(account.getPrimaryOwner().getName()) || !username.equals(account.getSecondaryOwner().getName()))
+                        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+                } else {
+                    if(!username.equals(account.getPrimaryOwner().getName()))
+                        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+                }
+            }
+        }
 
         BalanceDTO balance = new BalanceDTO();
         BigDecimal currentBalance = account.getBalance().getAmount();

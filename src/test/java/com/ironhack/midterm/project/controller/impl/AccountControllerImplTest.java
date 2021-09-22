@@ -166,7 +166,7 @@ class AccountControllerImplTest {
         creditCard.setCreationDate(LocalDate.now());
         creditCard.setLastAccessed(LocalDate.of(LocalDate.now().getYear(), LocalDate.now().getMonthValue() - 3, LocalDate.now().getDayOfMonth()));
         creditCard.setInterestRate(new InterestRate(new BigDecimal("0.12")));
-        creditCard.setCreditLimit(new Money(new BigDecimal("500")));
+        creditCard.setCreditLimit(new Money(new BigDecimal("4000")));
         creditCard.setPenaltyFee(new Money(new BigDecimal("40")));
         creditCardRepository.save(creditCard);
 
@@ -186,14 +186,18 @@ class AccountControllerImplTest {
     //region getBalance tests
     @Test
     void getBalance_ValidAdminRequestForCheckingAccount_ReturnsBalanceWithFeesApplied() throws Exception {
+        checkingAccount.setLastAccessed(LocalDate.of(LocalDate.now().getYear(), LocalDate.now().getMonthValue() - 3, LocalDate.now().getDayOfMonth()));
+        checkingAccount.setBalance(new Money(new BigDecimal("340.56")));
+        checkingAccountRepository.save(checkingAccount);
+
         //Note that last accessed is set to be three months before the current date
-        //Monthly maintenance fee will be applied
+        //Monthly maintenance fees will be applied
         MvcResult mvcResult = mockMvc.perform(get("/accounts/1").with(httpBasic("admin", "123456")))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andReturn();
 
-        assertTrue(mvcResult.getResponse().getContentAsString().contains("304.56"));
+        assertEquals("{\"amount\":304.56}", mvcResult.getResponse().getContentAsString());
         checkingAccount.setBalance(new Money(new BigDecimal("340.56")));
         checkingAccountRepository.save(checkingAccount);
     }
@@ -223,6 +227,9 @@ class AccountControllerImplTest {
 
     @Test
     void getBalance_ValidRequestForCreditCardAccount_ReturnsBalanceWithInterestRateApplied() throws Exception {
+        creditCard.setBalance(new Money(new BigDecimal("2000")));
+        creditCardRepository.save(creditCard);
+
         //The credit card's last interest date is set to be three months before the current date
         //Interest rates will be applied for each month
         MvcResult mvcResult = mockMvc.perform(get("/accounts/3").with(httpBasic("Lucas Sánchez", "123456")))
@@ -237,6 +244,9 @@ class AccountControllerImplTest {
 
     @Test
     void getBalance_ValidRequestForSavingsAccount_ReturnsBalanceWithInterestRateApplied() throws Exception {
+        savings.setBalance(new Money(new BigDecimal("1500.35")));
+        savingsRepository.save(savings);
+
         //The account's last interest date is set to be a year before the current date
         //Interest rates will be applied for each year
         MvcResult mvcResult = mockMvc.perform(get("/accounts/4").with(httpBasic("Lucas Sánchez", "123456")))
@@ -251,7 +261,6 @@ class AccountControllerImplTest {
 
     @Test
     void getBalance_InvalidAccountHolderRequestForStudentCheckingAccount_StatusUnauthorized() throws Exception {
-        //TODO: Fix authentication check in AccountServiceImpl
         mockMvc.perform(get("/accounts/2").with(httpBasic("Lucas Sánchez", "123456")))
                 .andExpect(status().isUnauthorized());
     }
@@ -550,6 +559,7 @@ class AccountControllerImplTest {
     @Test
     void receiveOrTransferMoney_ValidTransferRequest_StatusNoContent() throws Exception {
         checkingAccount.setBalance(new Money(new BigDecimal("340.56")));
+        checkingAccountRepository.save(checkingAccount);
 
         TransferDTO transferDto = new TransferDTO();
         transferDto.setTargetAccount(1L);
@@ -567,6 +577,7 @@ class AccountControllerImplTest {
 
         assertEquals(new BigDecimal("400.00"), checkingAccountRepository.findById(1L).get().getBalance().getAmount().setScale(2, RoundingMode.HALF_EVEN));
         checkingAccount.setBalance(new Money(new BigDecimal("340.56")));
+        checkingAccountRepository.save(checkingAccount);
     }
 
     @Test
