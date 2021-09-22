@@ -22,8 +22,6 @@ import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -37,7 +35,6 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -240,7 +237,7 @@ class AccountControllerImplTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andReturn();
 
-        assertTrue(mvcResult.getResponse().getContentAsString().contains("2060.60"));
+        assertTrue(mvcResult.getResponse().getContentAsString().contains("1940.60"));
         creditCard.setBalance(new Money(new BigDecimal("2000")));
         creditCardRepository.save(creditCard);
     }
@@ -263,9 +260,9 @@ class AccountControllerImplTest {
     }
 
     @Test
-    void getBalance_InvalidAccountHolderRequestForStudentCheckingAccount_StatusUnauthorized() throws Exception {
+    void getBalance_InvalidAccountHolderRequestForStudentCheckingAccount_StatusForbidden() throws Exception {
         mockMvc.perform(get("/accounts/2").with(httpBasic("Lucas Sánchez", "123456")))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
     }
 
     @Test

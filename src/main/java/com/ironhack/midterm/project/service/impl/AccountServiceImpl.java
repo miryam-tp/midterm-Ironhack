@@ -55,30 +55,8 @@ public class AccountServiceImpl implements AccountService {
         //TODO: Refactor this verification into a separate method
         //Check user authorities
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        Object principal = auth.getPrincipal();
-
-        if(principal instanceof UserDetails) {
-            String username = ((CustomUserDetails)principal).getUsername();
-            if(auth != null && auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().contains("ACCOUNTHOLDER"))) {
-                if(account.getSecondaryOwner() != null) {
-                    if(!username.equals(account.getPrimaryOwner().getName()) && !username.equals(account.getSecondaryOwner().getName()))
-                        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
-                } else {
-                    if(!username.equals(account.getPrimaryOwner().getName()))
-                        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
-                }
-            }
-        } else {
-            String username = principal.toString();
-            if(auth != null && auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().contains("ACCOUNTHOLDER"))) {
-                if(account.getSecondaryOwner() != null) {
-                    if(!username.equals(account.getPrimaryOwner().getName()) && !username.equals(account.getSecondaryOwner().getName()))
-                        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
-                } else {
-                    if(!username.equals(account.getPrimaryOwner().getName()))
-                        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
-                }
-            }
+        if(auth != null && auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().contains("ACCOUNTHOLDER"))) {
+            verifyAccountOwnership(auth, account);
         }
 
         BalanceDTO balance = new BalanceDTO();
@@ -388,27 +366,7 @@ public class AccountServiceImpl implements AccountService {
 
         //TODO: Refactor this verification into a separate method
         //Check origin account's owner
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-
-        if(principal instanceof UserDetails) {
-            String username = ((CustomUserDetails)principal).getUsername();
-                if(originAccount.getSecondaryOwner() != null) {
-                    if(!username.equals(originAccount.getPrimaryOwner().getName()) && !username.equals(originAccount.getSecondaryOwner().getName()))
-                        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
-                } else {
-                    if(!username.equals(originAccount.getPrimaryOwner().getName()))
-                        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
-                }
-        } else {
-            String username = principal.toString();
-                if(originAccount.getSecondaryOwner() != null) {
-                    if(!username.equals(originAccount.getPrimaryOwner().getName()) && !username.equals(originAccount.getSecondaryOwner().getName()))
-                        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
-                } else {
-                    if(!username.equals(originAccount.getPrimaryOwner().getName()))
-                        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
-                }
-        }
+        verifyAccountOwnership(SecurityContextHolder.getContext().getAuthentication(), originAccount);
 
         //Check target account's owner
         String accountOwner = transferDto.getAccountOwner();
@@ -464,5 +422,23 @@ public class AccountServiceImpl implements AccountService {
         //Save the updated account
         originAccount.setBalance(new Money(newBalance));
         accountRepository.save(originAccount);
+    }
+
+    public void verifyAccountOwnership(Authentication auth, Account account) {
+        Object principal = auth.getPrincipal();
+
+        String username;
+        if(principal instanceof UserDetails) {
+            username = ((CustomUserDetails) principal).getUsername();
+        } else {
+            username = principal.toString();
+        }
+        if(account.getSecondaryOwner() != null) {
+            if(!username.equals(account.getPrimaryOwner().getName()) && !username.equals(account.getSecondaryOwner().getName()))
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        } else {
+            if(!username.equals(account.getPrimaryOwner().getName()))
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        }
     }
 }
