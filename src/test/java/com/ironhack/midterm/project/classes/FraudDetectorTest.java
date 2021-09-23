@@ -61,11 +61,12 @@ class FraudDetectorTest {
     }
 
     @Test
-    void checkThirdPartyTransaction() {
+    void checkTransaction_() {
     }
 
     @Test
-    void checkAccountHolderTransaction() {
+    void isMoreThanHighestDailyTransactions() {
+        
     }
 
     @Test

@@ -303,7 +303,8 @@ public class AccountServiceImpl implements AccountService {
 
         //TODO: Implement fraud detection
         //Check if possible fraud
-        FraudDetector.checkTransaction(account);
+        BigDecimal transferAmount = transferDto.getAmount();
+        FraudDetector.checkTransaction(account, transferAmount);
 
         if(account instanceof Savings) {
             Savings savings = savingsRepository.findById(account.getId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
@@ -406,12 +407,13 @@ public class AccountServiceImpl implements AccountService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find origin account"));
 
         //Check amount is not negative or zero
-        if(transferDto.getAmount().compareTo(new BigDecimal(0)) < 1)
+        BigDecimal transferAmount = transferDto.getAmount();
+        if(transferAmount.compareTo(new BigDecimal(0)) < 1)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Transfer amount cannot be zero or less than zero");
 
         //TODO: Implement fraud detection
         //Check if possible fraud
-        FraudDetector.checkTransaction(originAccount);
+        FraudDetector.checkTransaction(originAccount, transferAmount);
 
         //Check origin account's owner
         verifyAccountOwnership(SecurityContextHolder.getContext().getAuthentication(), originAccount);

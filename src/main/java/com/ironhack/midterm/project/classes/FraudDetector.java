@@ -1,10 +1,7 @@
 package com.ironhack.midterm.project.classes;
 
 import com.ironhack.midterm.project.enums.Status;
-import com.ironhack.midterm.project.model.account.Account;
-import com.ironhack.midterm.project.model.account.CheckingAccount;
-import com.ironhack.midterm.project.model.account.Savings;
-import com.ironhack.midterm.project.model.account.StudentChecking;
+import com.ironhack.midterm.project.model.account.*;
 import com.ironhack.midterm.project.model.users.ThirdParty;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
@@ -83,52 +80,85 @@ public class FraudDetector {
 
     //endregion
 
-    public static void checkTransaction(Account account) {
+    /**
+     * Method to validate transaction parameters and check if there is fraud danger
+     * @param account Account
+     */
+    public static void checkTransaction(Account account, BigDecimal transactionAmount) {
         FraudDetector fraudDetector = account.getFraudDetector();
 
         //Check if the last transaction was less than a second ago
         if(fraudDetector.lastTransactionTime != null) {
             if(fraudDetector.isLastTransactionLessThanOneSecondAgo()) {
-                //Freeze account
-                if(account instanceof Savings)
-                    ((Savings) account).setStatus(Status.FROZEN);
-                else if(account instanceof CheckingAccount)
-                    ((Savings)account).setStatus(Status.FROZEN);
-                else if(account instanceof StudentChecking)
-                    ((StudentChecking)account).setStatus(Status.FROZEN);
-                throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Too many requests were sent. Target account will be frozen");
+                freezeAccount(account);
+                throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Too many requests were sent in the span of a second. The account will be frozen");
             }
         }
 
         //Check if transactions made in the last 24 hours total more than 150% of the highest daily total transactions in any other 24h period
-
+        if(fraudDetector.isMoreThanHighestDailyTransactions(transactionAmount)) {
+            freezeAccount(account);
+            throw new ResponseStatusException(HttpStatus.LOCKED, "This transaction is possibly fraudulent and the account will be frozen");
+        }
     }
 
+    /**
+     * Method to determine if the last transaction set in the account's FraudDetector happened less than one second before the current one
+     * @return true if the last transaction was made less than a second ago, false if it was made more than a second ago or if the last transaction date is null
+     */
     public boolean isLastTransactionLessThanOneSecondAgo() {
         //Example of two timestamps in the same second with same second value (nanoseconds do not matter)
         //  00:00:01:001    and    00:00:01:053
         //Example of two timestamps with different second value (nanoseconds are smaller in the current timestamp than in the last transaction timestamp)
         //  00:00:01:005     and    00:00:02:003
 
-        //Check date is the same
-        if(this.lastTransactionTime.toLocalDate().isEqual(LocalDate.now())) {
-            //If second is the same, last transaction was less than one second ago
-            if(this.lastTransactionTime.toLocalTime().getSecond() == LocalTime.now().getSecond())
-                return true;
-            //If second is smaller than current transaction second, we have to check nanoseconds
-            else if(this.lastTransactionTime.toLocalTime().getSecond() < LocalTime.now().getSecond()) {
-                //If nanoseconds in last transaction are bigger than current transaction nanos, the last transaction was less than one second ago
-                if(this.lastTransactionTime.toLocalTime().getNano() > LocalTime.now().getNano())
+        //Check date is not null
+        if(this.lastTransactionTime != null) {
+            //Check date is the same
+            if(this.lastTransactionTime.toLocalDate().isEqual(LocalDate.now())) {
+                //If second is the same, last transaction was less than one second ago
+                if(this.lastTransactionTime.toLocalTime().getSecond() == LocalTime.now().getSecond())
                     return true;
-                else return false;
+                    //If second is smaller than current transaction second, we have to check nanoseconds
+                else if(this.lastTransactionTime.toLocalTime().getSecond() < LocalTime.now().getSecond()) {
+                    //If nanoseconds in last transaction are bigger than current transaction nanos, the last transaction was less than one second ago
+                    if(this.lastTransactionTime.toLocalTime().getNano() > LocalTime.now().getNano())
+                        return true;
+                    else return false;
+                } else return false;
             } else return false;
-        } else return false;
+        }
+        else return false;
     }
 
-    public boolean isMoreThanHighestDailyTransactions() {
+    /**
+     * Method to determine if the transaction amount that is passed to the method is higher than 150% the maximum daily amount specified in the account's FraudDetector.
+     * The method will check if maxDailyAmount is not zero, which would mean the account was created recently, as well as if another transaction was made in the same day.
+     * If both of these conditions are true, it will finally validate if the transaction amount is bigger than the maximum daily amount.
+     * @param amount Amount
+     * @return true if the amount is bigger than maximum daily amount multiplied by 1.5
+     */
+    public boolean isMoreThanHighestDailyTransactions(BigDecimal amount) {
         if(this.maxDailyAmount.compareTo(new BigDecimal("0")) == 0)
             return false;
-        return true;
+        else if(!this.lastTransactionTime.toLocalDate().isEqual(LocalDate.now()))
+            return false;
+        else if(amount.compareTo(this.maxDailyAmount.multiply(new BigDecimal("1.5"))) > 0)
+            return true;
+        else return false;
     }
 
+    /**
+     * Method to freeze an account.
+     * If the account is an instance of Credit Card it does nothing, since Credit Card does not have Status
+     * @param account Account
+     */
+    private static void freezeAccount(Account account) {
+        if(account instanceof Savings)
+            ((Savings) account).setStatus(Status.FROZEN);
+        else if(account instanceof CheckingAccount)
+            ((Savings)account).setStatus(Status.FROZEN);
+        else if(account instanceof StudentChecking)
+            ((StudentChecking)account).setStatus(Status.FROZEN);
+    }
 }
