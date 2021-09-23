@@ -1,11 +1,11 @@
 package com.ironhack.midterm.project.model.account;
 
+import com.ironhack.midterm.project.classes.FraudDetector;
 import com.ironhack.midterm.project.classes.Money;
 import com.ironhack.midterm.project.model.users.AccountHolder;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
-import java.time.Clock;
 import java.time.LocalDate;
 
 @Entity
@@ -32,6 +32,8 @@ public abstract class Account {
     private LocalDate creationDate;
     @NotNull
     private LocalDate lastAccessed;
+    @Embedded
+    private FraudDetector fraudDetector;
 
     public Long getId() {
         return id;
@@ -79,5 +81,13 @@ public abstract class Account {
 
     public void setLastAccessed(LocalDate lastAccessed) {
         this.lastAccessed = lastAccessed;
+    }
+
+    public FraudDetector getFraudDetector() {
+        return fraudDetector;
+    }
+
+    public void setFraudDetector(FraudDetector fraudDetector) {
+        this.fraudDetector = fraudDetector;
     }
 }

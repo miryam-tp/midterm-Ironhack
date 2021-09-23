@@ -1,5 +1,6 @@
 package com.ironhack.midterm.project.service.impl;
 
+import com.ironhack.midterm.project.classes.FraudDetector;
 import com.ironhack.midterm.project.classes.InterestRate;
 import com.ironhack.midterm.project.classes.Money;
 import com.ironhack.midterm.project.controller.dto.AccountDTO;
@@ -8,6 +9,7 @@ import com.ironhack.midterm.project.controller.dto.TransferDTO;
 import com.ironhack.midterm.project.enums.Status;
 import com.ironhack.midterm.project.model.account.*;
 import com.ironhack.midterm.project.model.users.AccountHolder;
+import com.ironhack.midterm.project.model.users.ThirdParty;
 import com.ironhack.midterm.project.repository.*;
 import com.ironhack.midterm.project.security.CustomUserDetails;
 import com.ironhack.midterm.project.service.interfaces.AccountService;
@@ -52,7 +54,6 @@ public class AccountServiceImpl implements AccountService {
         Account account = accountRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Account with id " + id + " not found"));
 
-        //TODO: Refactor this verification into a separate method
         //Check user authorities
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if(auth != null && auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().contains("ACCOUNTHOLDER"))) {
@@ -285,7 +286,7 @@ public class AccountServiceImpl implements AccountService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Must provide hashed key in header"));
 
         //Check if third party user exists
-        thirdPartyRepository.findByHashedKey(hashedKey)
+        ThirdParty thirdParty = thirdPartyRepository.findByHashedKey(hashedKey)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Third party user with hashed key " + hashedKey + " does not exist"));
 
         //Check if target account exists
@@ -297,6 +298,14 @@ public class AccountServiceImpl implements AccountService {
 
         if(account instanceof Savings) {
             Savings savings = savingsRepository.findById(account.getId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+            //Check account is not frozen
+            if(savings.getStatus() == Status.FROZEN)
+                throw new ResponseStatusException(HttpStatus.LOCKED, "The target account is frozen");
+
+            //TODO: Implement fraud detection
+            //Check if possible fraud
+            FraudDetector.checkThirdPartyTransaction(savings, thirdParty);
 
             //Check if secret key is valid
             if(!savings.getSecretKey().equals(transferDto.getSecretKey()))
@@ -364,7 +373,10 @@ public class AccountServiceImpl implements AccountService {
         if(transferDto.getAmount().compareTo(new BigDecimal(0)) < 1)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Transfer amount cannot be zero or less than zero");
 
-        //TODO: Refactor this verification into a separate method
+        //TODO: Implement fraud detection
+        //Check if possible fraud
+        FraudDetector.checkAccountHolderTransaction(originAccount, targetAccount);
+
         //Check origin account's owner
         verifyAccountOwnership(SecurityContextHolder.getContext().getAuthentication(), originAccount);
 
