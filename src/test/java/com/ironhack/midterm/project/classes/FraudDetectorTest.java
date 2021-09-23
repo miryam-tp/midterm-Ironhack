@@ -5,7 +5,6 @@ import com.ironhack.midterm.project.model.account.CheckingAccount;
 import com.ironhack.midterm.project.model.users.AccountHolder;
 import com.ironhack.midterm.project.repository.AccountHolderRepository;
 import com.ironhack.midterm.project.repository.CheckingAccountRepository;
-import org.apache.tomcat.jni.Local;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -16,8 +15,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -76,7 +73,7 @@ class FraudDetectorTest {
         FraudDetector fraudDetector = checkingAccount.getFraudDetector();
         fraudDetector.setLastTransactionTime(LocalDateTime.of(currentDate, twoSecondsAgoTime));
         checkingAccountRepository.save(checkingAccount);
-        assertFalse(fraudDetector.lastTransactionLessThanOneSecondAgo());
+        assertFalse(fraudDetector.isLastTransactionLessThanOneSecondAgo());
     }
 
     @Test
@@ -84,6 +81,6 @@ class FraudDetectorTest {
         FraudDetector fraudDetector = checkingAccount.getFraudDetector();
         fraudDetector.setLastTransactionTime(LocalDateTime.now());
         checkingAccountRepository.save(checkingAccount);
-        assertTrue(fraudDetector.lastTransactionLessThanOneSecondAgo());
+        assertTrue(fraudDetector.isLastTransactionLessThanOneSecondAgo());
     }
 }

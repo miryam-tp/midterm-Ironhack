@@ -2,6 +2,7 @@ package com.ironhack.midterm.project.controller.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ironhack.midterm.project.classes.Address;
+import com.ironhack.midterm.project.classes.FraudDetector;
 import com.ironhack.midterm.project.classes.InterestRate;
 import com.ironhack.midterm.project.classes.Money;
 import com.ironhack.midterm.project.controller.dto.AccountDTO;
@@ -149,6 +150,7 @@ class AccountControllerImplTest {
         checkingAccount.setPenaltyFee(new Money(new BigDecimal("40")));
         checkingAccount.setSecretKey("29837");
         checkingAccount.setStatus(Status.ACTIVE);
+        checkingAccount.setFraudDetector(new FraudDetector(new BigDecimal("0"), new BigDecimal("0")));
         checkingAccountRepository.save(checkingAccount);
 
         studentChecking = new StudentChecking();
@@ -158,6 +160,7 @@ class AccountControllerImplTest {
         studentChecking.setLastAccessed(LocalDate.now());
         studentChecking.setSecretKey("AB$334");
         studentChecking.setStatus(Status.ACTIVE);
+        studentChecking.setFraudDetector(new FraudDetector(new BigDecimal("0"), new BigDecimal("0")));
         studentCheckingRepository.save(studentChecking);
 
         creditCard = new CreditCard();
@@ -168,6 +171,7 @@ class AccountControllerImplTest {
         creditCard.setInterestRate(new InterestRate(new BigDecimal("0.12")));
         creditCard.setCreditLimit(new Money(new BigDecimal("4000")));
         creditCard.setPenaltyFee(new Money(new BigDecimal("40")));
+        creditCard.setFraudDetector(new FraudDetector(new BigDecimal("0"), new BigDecimal("0")));
         creditCardRepository.save(creditCard);
 
         savings = new Savings();
@@ -180,6 +184,7 @@ class AccountControllerImplTest {
         savings.setPenaltyFee(new Money(new BigDecimal("40")));
         savings.setMinimumBalance(new Money(new BigDecimal("1000")));
         savings.setInterestRate(new InterestRate(new BigDecimal("0.2")));
+        savings.setFraudDetector(new FraudDetector(new BigDecimal("0"), new BigDecimal("0")));
         savingsRepository.save(savings);
     }
 
@@ -237,7 +242,7 @@ class AccountControllerImplTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andReturn();
 
-        assertTrue(mvcResult.getResponse().getContentAsString().contains("1940.60"));
+        assertTrue(mvcResult.getResponse().getContentAsString().contains("2060.60"));
         creditCard.setBalance(new Money(new BigDecimal("2000")));
         creditCardRepository.save(creditCard);
     }

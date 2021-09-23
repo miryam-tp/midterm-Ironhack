@@ -13,6 +13,7 @@ import javax.persistence.AttributeOverride;
 import javax.persistence.AttributeOverrides;
 import javax.persistence.Column;
 import javax.persistence.Embeddable;
+import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -26,11 +27,18 @@ public class FraudDetector {
             @AttributeOverride(name = "amount", column = @Column(name = "last_amount"))
     })
     private Money lastTransactionAmount;
+    @NotNull
     private BigDecimal maxDailyAmount;
+    @NotNull
     private BigDecimal currentDayTransactions;
 
     //region constructors, getters and setters
     public FraudDetector() {
+    }
+
+    public FraudDetector(BigDecimal maxDailyAmount, BigDecimal currentDayTransactions) {
+        this.maxDailyAmount = maxDailyAmount;
+        this.currentDayTransactions = currentDayTransactions;
     }
 
     public FraudDetector(LocalDateTime lastTransactionTime, Money lastTransactionAmount, BigDecimal maxDailyAmount, BigDecimal currentDayTransactions) {
@@ -48,13 +56,13 @@ public class FraudDetector {
         this.lastTransactionTime = lastTransactionTime;
     }
 
-//    public Money getLastTransactionAmount() {
-//        return lastTransactionAmount;
-//    }
-//
-//    public void setLastTransactionAmount(Money lastTransactionAmount) {
-//        this.lastTransactionAmount = lastTransactionAmount;
-//    }
+    public Money getLastTransactionAmount() {
+        return lastTransactionAmount;
+    }
+
+    public void setLastTransactionAmount(Money lastTransactionAmount) {
+        this.lastTransactionAmount = lastTransactionAmount;
+    }
 
     public BigDecimal getMaxDailyAmount() {
         return maxDailyAmount;
@@ -71,14 +79,17 @@ public class FraudDetector {
     public void setCurrentDayTransactions(BigDecimal currentDayTransactions) {
         this.currentDayTransactions = currentDayTransactions;
     }
+
+
     //endregion
 
-    public static void checkThirdPartyTransaction(Account account, ThirdParty thirdParty) {
+    public static void checkTransaction(Account account) {
         FraudDetector fraudDetector = account.getFraudDetector();
 
         //Check if the last transaction was less than a second ago
         if(fraudDetector.lastTransactionTime != null) {
-            if(fraudDetector.lastTransactionLessThanOneSecondAgo()) {
+            if(fraudDetector.isLastTransactionLessThanOneSecondAgo()) {
+                //Freeze account
                 if(account instanceof Savings)
                     ((Savings) account).setStatus(Status.FROZEN);
                 else if(account instanceof CheckingAccount)
@@ -93,11 +104,7 @@ public class FraudDetector {
 
     }
 
-    public static void checkAccountHolderTransaction(Account originAccount, Account targetAccount) {
-
-    }
-
-    public boolean lastTransactionLessThanOneSecondAgo() {
+    public boolean isLastTransactionLessThanOneSecondAgo() {
         //Example of two timestamps in the same second with same second value (nanoseconds do not matter)
         //  00:00:01:001    and    00:00:01:053
         //Example of two timestamps with different second value (nanoseconds are smaller in the current timestamp than in the last transaction timestamp)
@@ -116,6 +123,12 @@ public class FraudDetector {
                 else return false;
             } else return false;
         } else return false;
+    }
+
+    public boolean isMoreThanHighestDailyTransactions() {
+        if(this.maxDailyAmount.compareTo(new BigDecimal("0")) == 0)
+            return false;
+        return true;
     }
 
 }

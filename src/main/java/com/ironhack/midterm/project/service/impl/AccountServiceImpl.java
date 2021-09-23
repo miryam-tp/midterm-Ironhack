@@ -24,6 +24,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
@@ -98,7 +99,7 @@ public class AccountServiceImpl implements AccountService {
                 //For each month passed since the last time the account was accessed, we apply the interest rate
                 for(int i = 0; i < monthsPassed; i++) {
                     BigDecimal fees = currentBalance.multiply(monthlyInterest);
-                    currentBalance = currentBalance.subtract(fees);
+                    currentBalance = currentBalance.add(fees);
                 }
 
                 creditCard.setLastAccessed(LocalDate.now());
@@ -153,6 +154,7 @@ public class AccountServiceImpl implements AccountService {
                 }
                 creditCard.setCreationDate(LocalDate.now());
                 creditCard.setLastAccessed(LocalDate.now());
+                creditCard.setFraudDetector(new FraudDetector(new BigDecimal("0"), new BigDecimal("0")));
 
                 //Setting specific CreditCard properties
                 if(accountDto.getCreditLimit() == null)
@@ -191,6 +193,7 @@ public class AccountServiceImpl implements AccountService {
                     }
                     studentChecking.setCreationDate(LocalDate.now());
                     studentChecking.setLastAccessed(LocalDate.now());
+                    studentChecking.setFraudDetector(new FraudDetector(new BigDecimal("0"), new BigDecimal("0")));
 
                     //Setting specific StudentChecking properties
                     if(accountDto.getSecretKey() == null)
@@ -214,6 +217,7 @@ public class AccountServiceImpl implements AccountService {
                     }
                     checkingAccount.setCreationDate(LocalDate.now());
                     checkingAccount.setLastAccessed(LocalDate.now());
+                    checkingAccount.setFraudDetector(new FraudDetector(new BigDecimal("0"), new BigDecimal("0")));
 
                     //Setting specific CheckingAccount properties
                     if(accountDto.getSecretKey() == null)
@@ -241,6 +245,7 @@ public class AccountServiceImpl implements AccountService {
                 }
                 savings.setCreationDate(LocalDate.now());
                 savings.setLastAccessed(LocalDate.now());
+                savings.setFraudDetector(new FraudDetector(new BigDecimal("0"), new BigDecimal("0")));
 
                 //Setting specific Savings properties
                 if(accountDto.getSecretKey() == null)
@@ -296,16 +301,16 @@ public class AccountServiceImpl implements AccountService {
         if(account instanceof CreditCard)
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY);
 
+        //TODO: Implement fraud detection
+        //Check if possible fraud
+        FraudDetector.checkTransaction(account);
+
         if(account instanceof Savings) {
             Savings savings = savingsRepository.findById(account.getId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
             //Check account is not frozen
             if(savings.getStatus() == Status.FROZEN)
                 throw new ResponseStatusException(HttpStatus.LOCKED, "The target account is frozen");
-
-            //TODO: Implement fraud detection
-            //Check if possible fraud
-            FraudDetector.checkThirdPartyTransaction(savings, thirdParty);
 
             //Check if secret key is valid
             if(!savings.getSecretKey().equals(transferDto.getSecretKey()))
@@ -320,8 +325,18 @@ public class AccountServiceImpl implements AccountService {
             if(savings.getMinimumBalance().getAmount().compareTo(newBalance.getAmount()) > 0)
                 newBalance = new Money(newBalance.getAmount().subtract(savings.getPenaltyFee().getAmount()));  //Apply penalty fee
 
-            //Set balance after transaction
+            //Update fraud detector and save new balance
+            FraudDetector fraudDetector = savings.getFraudDetector();
             savings.setBalance(newBalance);
+            if(fraudDetector.getLastTransactionTime().toLocalDate().isEqual(LocalDate.now())) {
+                fraudDetector.setCurrentDayTransactions(fraudDetector.getCurrentDayTransactions().add(transferDto.getAmount().abs()));
+            } else {
+                fraudDetector.setCurrentDayTransactions(transferDto.getAmount());
+            }
+            if(fraudDetector.getCurrentDayTransactions().compareTo(fraudDetector.getMaxDailyAmount()) > 0)
+                fraudDetector.setMaxDailyAmount(fraudDetector.getCurrentDayTransactions());
+            fraudDetector.setLastTransactionAmount(new Money(transferDto.getAmount()));
+            fraudDetector.setLastTransactionTime(LocalDateTime.now());
             savingsRepository.save(savings);
         }
         else if(account instanceof CheckingAccount) {
@@ -340,7 +355,18 @@ public class AccountServiceImpl implements AccountService {
             if(checkingAccount.getMinimumBalance().getAmount().compareTo(newBalance.getAmount()) > 0)
                 newBalance = new Money(newBalance.getAmount().subtract(checkingAccount.getPenaltyFee().getAmount()));  //Apply penalty fee
 
+            //Update fraud detector and save new balance
+            FraudDetector fraudDetector = checkingAccount.getFraudDetector();
             checkingAccount.setBalance(newBalance);
+            if(fraudDetector.getLastTransactionTime().toLocalDate().isEqual(LocalDate.now())) {
+                fraudDetector.setCurrentDayTransactions(fraudDetector.getCurrentDayTransactions().add(transferDto.getAmount().abs()));
+            } else {
+                fraudDetector.setCurrentDayTransactions(transferDto.getAmount());
+            }
+            if(fraudDetector.getCurrentDayTransactions().compareTo(fraudDetector.getMaxDailyAmount()) > 0)
+                fraudDetector.setMaxDailyAmount(fraudDetector.getCurrentDayTransactions());
+            fraudDetector.setLastTransactionAmount(new Money(transferDto.getAmount()));
+            fraudDetector.setLastTransactionTime(LocalDateTime.now());
             checkingAccountRepository.save(checkingAccount);
         }
         else if(account instanceof StudentChecking) {
@@ -355,7 +381,17 @@ public class AccountServiceImpl implements AccountService {
             //If amount is positive, third party transfers money
             Money newBalance = new Money(studentChecking.getBalance().getAmount().add(transferDto.getAmount()));
 
+            FraudDetector fraudDetector = studentChecking.getFraudDetector();
             studentChecking.setBalance(newBalance);
+            if(fraudDetector.getLastTransactionTime().toLocalDate().isEqual(LocalDate.now())) {
+                fraudDetector.setCurrentDayTransactions(fraudDetector.getCurrentDayTransactions().add(transferDto.getAmount().abs()));
+            } else {
+                fraudDetector.setCurrentDayTransactions(transferDto.getAmount());
+            }
+            if(fraudDetector.getCurrentDayTransactions().compareTo(fraudDetector.getMaxDailyAmount()) > 0)
+                fraudDetector.setMaxDailyAmount(fraudDetector.getCurrentDayTransactions());
+            fraudDetector.setLastTransactionAmount(new Money(transferDto.getAmount()));
+            fraudDetector.setLastTransactionTime(LocalDateTime.now());
             studentCheckingRepository.save(studentChecking);
         }
     }
@@ -375,7 +411,7 @@ public class AccountServiceImpl implements AccountService {
 
         //TODO: Implement fraud detection
         //Check if possible fraud
-        FraudDetector.checkAccountHolderTransaction(originAccount, targetAccount);
+        FraudDetector.checkTransaction(originAccount);
 
         //Check origin account's owner
         verifyAccountOwnership(SecurityContextHolder.getContext().getAuthentication(), originAccount);
@@ -431,8 +467,19 @@ public class AccountServiceImpl implements AccountService {
             if(newBalance.compareTo(((CheckingAccount) originAccount).getMinimumBalance().getAmount()) < 0)
                 newBalance = newBalance.subtract(((CheckingAccount) originAccount).getPenaltyFee().getAmount());
         }
-        //Save the updated account
+
+        //Update fraud detector and save the updated balance
+        FraudDetector fraudDetector = originAccount.getFraudDetector();
         originAccount.setBalance(new Money(newBalance));
+        if(fraudDetector.getLastTransactionTime().toLocalDate().isEqual(LocalDate.now())) {
+            fraudDetector.setCurrentDayTransactions(fraudDetector.getCurrentDayTransactions().add(transferDto.getAmount()));
+        } else {
+            fraudDetector.setCurrentDayTransactions(transferDto.getAmount());
+        }
+        if(fraudDetector.getCurrentDayTransactions().compareTo(fraudDetector.getMaxDailyAmount()) > 0)
+            fraudDetector.setMaxDailyAmount(fraudDetector.getCurrentDayTransactions());
+        fraudDetector.setLastTransactionAmount(new Money(transferDto.getAmount()));
+        fraudDetector.setLastTransactionTime(LocalDateTime.now());
         accountRepository.save(originAccount);
     }
 
