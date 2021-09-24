@@ -40,7 +40,7 @@ as well as the name of the schema you will be using to run the program.
 
 Run the database script that is included in the project to create the necessary schemas.
 
-##❓ How to use
+## ❓ How to use
 The application supports the next URIs:
 
 | URI | Type of request | Parameters |  Access/Role |  Function  |
