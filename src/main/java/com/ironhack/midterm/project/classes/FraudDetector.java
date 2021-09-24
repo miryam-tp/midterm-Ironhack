@@ -134,23 +134,29 @@ public class FraudDetector {
     /**
      * Method to determine if the transaction amount that is passed to the method is higher than 150% the maximum daily amount specified in the account's FraudDetector.
      * The method will check if maxDailyAmount is not zero, which would mean the account was created recently, as well as if another transaction was made in the same day.
-     * If both of these conditions are true, it will finally validate if the transaction amount is bigger than the maximum daily amount.
+     * If both of these conditions are true, it will validate if the transaction amount is bigger than the maximum daily amount and flag the transaction as possibly
+     * fraudulent in case it is.
      * @param amount Amount
      * @return true if the amount is bigger than maximum daily amount multiplied by 1.5
      */
     public boolean isMoreThanHighestDailyTransactions(BigDecimal amount) {
-        if(this.maxDailyAmount.compareTo(new BigDecimal("0")) == 0)
+        if(this.maxDailyAmount.compareTo(new BigDecimal("0")) == 0)  //If this is true, then the account is new and will not validate the amount
             return false;
+        else if(this.lastTransactionTime.toLocalDate().isEqual(LocalDate.now().minusDays(1))) {  //Check if a transaction was made in the last 24 hours
+            if(this.lastTransactionTime.isBefore(LocalDateTime.now().minusHours(24)))
+                return false;
+        }
         else if(!this.lastTransactionTime.toLocalDate().isEqual(LocalDate.now()))
             return false;
-        else if(amount.compareTo(this.maxDailyAmount.multiply(new BigDecimal("1.5"))) > 0)
+
+        if(amount.compareTo(this.maxDailyAmount.multiply(new BigDecimal("1.5"))) > 0)  //Compare the transaction amount
             return true;
         else return false;
     }
 
     /**
      * Method to freeze an account.
-     * If the account is an instance of Credit Card it does nothing, since Credit Card does not have Status
+     * If the account is an instance of Credit Card it does nothing, since Credit Card does not have a Status
      * @param account Account
      */
     private static void freezeAccount(Account account) {

@@ -33,7 +33,7 @@ class FraudDetectorTest {
     private CheckingAccount checkingAccount;
 
     private LocalDate currentDate = LocalDate.now();
-    private LocalTime twoSecondsAgoTime = LocalTime.of(LocalTime.now().getHour(), LocalTime.now().getMinute(), LocalTime.now().getSecond() - 2);
+    private LocalTime twoSecondsAgoTime = LocalTime.now().minusSeconds(2);
 
     @BeforeAll
     void setUp() {
@@ -65,8 +65,41 @@ class FraudDetectorTest {
     }
 
     @Test
-    void isMoreThanHighestDailyTransactions() {
-        
+    void isMoreThanHighestDailyTransactions_AmountSmaller_ReturnFalse() {
+        checkingAccount.setFraudDetector(new FraudDetector(
+                LocalDateTime.of(LocalDate.now(), twoSecondsAgoTime), new Money(new BigDecimal("50")), new BigDecimal("200"), new BigDecimal("100")
+                ));
+        checkingAccountRepository.save(checkingAccount);
+        FraudDetector fraudDetector = checkingAccount.getFraudDetector();
+        assertFalse(fraudDetector.isMoreThanHighestDailyTransactions(new BigDecimal(100)));
+    }
+
+    @Test
+    void isMoreThanHighestDailyTransactions_NoMaxDailyTransactionsSet_ReturnFalse() {
+        checkingAccount.setFraudDetector(new FraudDetector(new BigDecimal("0"), new BigDecimal("0")));
+        checkingAccountRepository.save(checkingAccount);
+        FraudDetector fraudDetector = checkingAccount.getFraudDetector();
+        assertFalse(fraudDetector.isMoreThanHighestDailyTransactions(new BigDecimal("200")));
+    }
+
+    @Test
+    void isMoreThanHighestDailyTransactions_AmountBiggerAndNoTransactionsTheSameDay_ReturnFalse() {
+        checkingAccount.setFraudDetector(new FraudDetector(
+                LocalDateTime.of(LocalDate.now().minusDays(1), LocalTime.now()), new Money(new BigDecimal("50")), new BigDecimal("200"), new BigDecimal("100")
+        ));
+        checkingAccountRepository.save(checkingAccount);
+        FraudDetector fraudDetector = checkingAccount.getFraudDetector();
+        assertFalse(fraudDetector.isMoreThanHighestDailyTransactions(new BigDecimal(400)));
+    }
+
+    @Test
+    void isMoreThanHighestDailyTransactions_AmountBigger_ReturnTrue() {
+        checkingAccount.setFraudDetector(new FraudDetector(
+                LocalDateTime.now().minusHours(2), new Money(new BigDecimal("50")), new BigDecimal("200"), new BigDecimal("100")
+        ));
+        checkingAccountRepository.save(checkingAccount);
+        FraudDetector fraudDetector = checkingAccount.getFraudDetector();
+        assertTrue(fraudDetector.isMoreThanHighestDailyTransactions(new BigDecimal(400)));
     }
 
     @Test
