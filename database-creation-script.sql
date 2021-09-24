@@ -127,6 +127,13 @@ CREATE TABLE credit_card(
     FOREIGN KEY(id) REFERENCES `account`(id)
 );
 
+-- INSERT STATEMENTS
+INSERT INTO `role`(name)
+VALUES('ADMIN'), ('ACCOUNTHOLDER');
+
+INSERT INTO `user`(name, password, role_id)
+VALUES('admin', '$2a$10$MSzkrmfd5ZTipY0XkuCbAejBC9g74MAg2wrkeu8/m1wQGXDihaX3e', 1);
+
 -- TEST DATABASE
 DROP SCHEMA IF EXISTS midterm_test;
 CREATE SCHEMA midterm_test;
