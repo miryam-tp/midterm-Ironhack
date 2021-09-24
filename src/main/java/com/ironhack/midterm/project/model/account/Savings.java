@@ -21,6 +21,7 @@ public class Savings extends Account {
     private Money minimumBalance;
     @NotNull
     @Embedded
+    @AttributeOverride(name = "amount", column = @Column(name = "interest_rate"))
     private InterestRate interestRate;
     @NotNull
     @Embedded

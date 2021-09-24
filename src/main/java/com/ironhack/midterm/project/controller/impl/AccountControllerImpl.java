@@ -18,9 +18,6 @@ import java.util.Optional;
 @RestController
 public class AccountControllerImpl implements AccountController {
 
-//    @Autowired
-//    private AccountRepository accountRepository;
-
     @Autowired
     private AccountService accountService;
 

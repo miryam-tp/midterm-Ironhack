@@ -19,6 +19,7 @@ public class CreditCard extends Account {
     private Money creditLimit;
     @NotNull
     @Embedded
+    @AttributeOverride(name = "amount", column = @Column(name = "interest_rate"))
     private InterestRate interestRate;
     @NotNull
     @AttributeOverrides({

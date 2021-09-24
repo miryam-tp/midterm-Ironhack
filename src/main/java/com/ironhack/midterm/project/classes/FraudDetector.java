@@ -116,15 +116,18 @@ public class FraudDetector {
         if(this.lastTransactionTime != null) {
             //Check date is the same
             if(this.lastTransactionTime.toLocalDate().isEqual(LocalDate.now())) {
-                //If second is the same, last transaction was less than one second ago
-                if(this.lastTransactionTime.toLocalTime().getSecond() == LocalTime.now().getSecond())
-                    return true;
-                    //If second is smaller than current transaction second, we have to check nanoseconds
-                else if(this.lastTransactionTime.toLocalTime().getSecond() < LocalTime.now().getSecond()) {
-                    //If nanoseconds in last transaction are bigger than current transaction nanos, the last transaction was less than one second ago
-                    if(this.lastTransactionTime.toLocalTime().getNano() > LocalTime.now().getNano())
+                //Check hour is the same
+                if(this.lastTransactionTime.toLocalTime().getHour() == LocalTime.now().getHour()) {
+                    //If second is the same, last transaction was less than one second ago
+                    if(this.lastTransactionTime.toLocalTime().getSecond() == LocalTime.now().getSecond())
                         return true;
-                    else return false;
+                        //If second is smaller than current transaction second, we have to check nanoseconds
+                    else if(this.lastTransactionTime.toLocalTime().getSecond() < LocalTime.now().getSecond()) {
+                        //If nanoseconds in last transaction are bigger than current transaction nanos, the last transaction was less than one second ago
+                        if(this.lastTransactionTime.toLocalTime().getNano() > LocalTime.now().getNano())
+                            return true;
+                        else return false;
+                    } else return false;
                 } else return false;
             } else return false;
         }
@@ -163,7 +166,7 @@ public class FraudDetector {
         if(account instanceof Savings)
             ((Savings) account).setStatus(Status.FROZEN);
         else if(account instanceof CheckingAccount)
-            ((Savings)account).setStatus(Status.FROZEN);
+            ((CheckingAccount)account).setStatus(Status.FROZEN);
         else if(account instanceof StudentChecking)
             ((StudentChecking)account).setStatus(Status.FROZEN);
     }

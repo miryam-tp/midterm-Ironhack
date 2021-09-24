@@ -301,7 +301,6 @@ public class AccountServiceImpl implements AccountService {
         if(account instanceof CreditCard)
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY);
 
-        //TODO: Implement fraud detection
         //Check if possible fraud
         BigDecimal transferAmount = transferDto.getAmount();
         FraudDetector.checkTransaction(account, transferAmount);
@@ -411,7 +410,6 @@ public class AccountServiceImpl implements AccountService {
         if(transferAmount.compareTo(new BigDecimal(0)) < 1)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Transfer amount cannot be zero or less than zero");
 
-        //TODO: Implement fraud detection
         //Check if possible fraud
         FraudDetector.checkTransaction(originAccount, transferAmount);
 

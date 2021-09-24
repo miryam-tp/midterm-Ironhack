@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -61,7 +63,31 @@ class FraudDetectorTest {
     }
 
     @Test
-    void checkTransaction_() {
+    void checkTransaction_NotFraudulent_AccountStaysActive() {
+        checkingAccount.setStatus(Status.ACTIVE);
+        checkingAccountRepository.save(checkingAccount);
+        FraudDetector.checkTransaction(checkingAccount, new BigDecimal("20.99"));
+        assertEquals(Status.ACTIVE, checkingAccount.getStatus());
+    }
+
+    @Test
+    void checkTransaction_FraudulentAmountTooBig_StatusLockedAndAccountGetsFrozen() {
+        checkingAccount.setStatus(Status.ACTIVE);
+        checkingAccount.setFraudDetector(new FraudDetector(LocalDateTime.now().minusHours(2), new Money(new BigDecimal("20")), new BigDecimal("20"), new BigDecimal("10")));
+        checkingAccountRepository.save(checkingAccount);
+
+        assertThrows(ResponseStatusException.class, () -> FraudDetector.checkTransaction(checkingAccount, new BigDecimal("89.99")));
+        assertEquals(Status.FROZEN, checkingAccount.getStatus());
+    }
+
+    @Test
+    void checkTransaction_FraudulentTooManyRequests_AccountGetsFrozen() {
+        checkingAccount.setStatus(Status.ACTIVE);
+        checkingAccount.setFraudDetector(new FraudDetector(LocalDateTime.now(), new Money(new BigDecimal("20")), new BigDecimal("800"), new BigDecimal("250")));
+        checkingAccountRepository.save(checkingAccount);
+
+        assertThrows(ResponseStatusException.class, () -> FraudDetector.checkTransaction(checkingAccount, new BigDecimal("100")));
+        assertEquals(Status.FROZEN, checkingAccount.getStatus());
     }
 
     @Test

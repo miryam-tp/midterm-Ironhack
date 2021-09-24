@@ -20,13 +20,13 @@ public class AccountDTO {
     @DecimalMin("1")
     private Long secondaryOwner;
 
-    //Status se inicia como ACTIVE
-    //PenaltyFee se inicia como 40
-    //MonthlyMaintenanceFee se inicia en 12
+    //Status will be set ACTIVE
+    //PenaltyFee is 40 for all accounts
+    //MonthlyMaintenanceFee is 12 for all Checking Accounts
     private String secretKey;
     private BigDecimal minimumBalance;
     private BigDecimal interestRate;
-    private BigDecimal creditLimit;  //Solo en CreditCard
+    private BigDecimal creditLimit;  //Only for CreditCard Accounts
 
     public AccountType getAccountType() {
         return accountType;
