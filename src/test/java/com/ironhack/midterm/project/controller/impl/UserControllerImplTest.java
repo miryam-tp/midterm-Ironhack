@@ -89,6 +89,7 @@ class UserControllerImplTest {
         roleRepository.deleteAll();
     }
 
+    //TODO: Add invalid tests
     @Test
     void store_ValidThirdParty_StatusCreated() throws Exception {
         UserDTO userDTO = new UserDTO();
@@ -114,6 +115,7 @@ class UserControllerImplTest {
     void store_ValidAccountHolder_StatusCreated() throws Exception {
         UserDTO userDTO = new UserDTO();
         userDTO.setName("Laura Martínez");
+        userDTO.setPassword(passwordEncoder.encode("123456"));
         userDTO.setDateOfBirth("05-07-1980");
         userDTO.setPrimaryAddress(new Address("4B", "Sierpes", "Sevilla", "Spain"));
         userDTO.setMailingAddress(new Address("4B", "Sierpes", "Sevilla", "Spain"));

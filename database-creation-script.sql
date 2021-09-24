@@ -16,9 +16,9 @@ DROP TABLE IF EXISTS `user`;
 DROP TABLE IF EXISTS `role`;
 
 -- CREATE TABLE STATEMENTS
-DROP SCHEMA IF EXISTS midterm;
-CREATE SCHEMA midterm;
-USE midterm;
+DROP SCHEMA IF EXISTS banking;
+CREATE SCHEMA banking;
+USE banking;
 
 CREATE TABLE `role`(
 	id BIGINT NOT NULL AUTO_INCREMENT,
@@ -135,6 +135,6 @@ INSERT INTO `user`(name, password, role_id)
 VALUES('admin', '$2a$10$MSzkrmfd5ZTipY0XkuCbAejBC9g74MAg2wrkeu8/m1wQGXDihaX3e', 1);
 
 -- TEST DATABASE
-DROP SCHEMA IF EXISTS midterm_test;
-CREATE SCHEMA midterm_test;
-USE midterm_test;
+DROP SCHEMA IF EXISTS banking_test;
+CREATE SCHEMA banking_test;
+USE banking_test;

@@ -8,6 +8,7 @@ import javax.validation.constraints.Pattern;
 public class UserDTO {
     @NotBlank(message = "Name cannot be blank")
     private String name;
+    private String password;
     @Pattern(regexp = "\\d\\d-\\d\\d-\\d\\d\\d\\d", message = "Date format must be DD-MM-YYYY")
     private String dateOfBirth;
     private Address primaryAddress;
@@ -20,6 +21,14 @@ public class UserDTO {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     public String getDateOfBirth() {
