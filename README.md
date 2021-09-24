@@ -3,16 +3,16 @@
 
 ## 📌Features
 
--[x] **Register three types of user to access basic functionalities:**
+- [x] **Register three types of user to access basic functionalities:**
     * Admin, third party and account holders
--[x] **Create four types of account:**
+- [x] **Create four types of account:**
     * Checking, Student Checking, Savings and Credit Card
--[x] **Perform basic banking actions:**
+- [x] **Perform basic banking actions:**
     * Transfer from one account to another, allow third party transactions, interest and
       penalty fees apply automatically when it is required.
--[x] **Authentication with Basic Auth**
--[x] **Fraud detection**
--[x] **Data persistence**
+- [x] **Authentication with Basic Auth**
+- [x] **Fraud detection**
+- [x] **Data persistence**
 
 ## 📋Tech
 
