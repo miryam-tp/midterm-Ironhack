@@ -4,16 +4,16 @@ import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 
 public class TransferDTO {
-    //Both
+    //Both third party and account holder requests
     @NotNull
     private Long targetAccount;
     @NotNull
     private BigDecimal amount;
 
-    //Only thirdparty request
+    //Only for third party requests
     private String secretKey;
 
-    //Only accountholder request
+    //Only for account holder requests
     private Long originAccount;
     private String accountOwner;
 

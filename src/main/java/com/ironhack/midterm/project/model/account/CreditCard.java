@@ -5,7 +5,6 @@ import com.ironhack.midterm.project.classes.Money;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
-import java.math.BigDecimal;
 
 @Entity
 @PrimaryKeyJoinColumn(name = "id")

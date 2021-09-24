@@ -2,7 +2,6 @@ package com.ironhack.midterm.project.model.users;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
-import java.util.Set;
 
 @Entity
 @PrimaryKeyJoinColumn(name = "id")

@@ -5,14 +5,12 @@ import com.ironhack.midterm.project.controller.dto.BalanceDTO;
 import com.ironhack.midterm.project.controller.dto.TransferDTO;
 import com.ironhack.midterm.project.controller.interfaces.AccountController;
 import com.ironhack.midterm.project.model.account.Account;
-import com.ironhack.midterm.project.repository.AccountRepository;
 import com.ironhack.midterm.project.service.interfaces.AccountService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
-import java.util.List;
 import java.util.Optional;
 
 @RestController

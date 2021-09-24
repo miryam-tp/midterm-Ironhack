@@ -1,8 +1,6 @@
 package com.ironhack.midterm.project.model.account;
 
-import com.ironhack.midterm.project.classes.Money;
 import com.ironhack.midterm.project.enums.Status;
-import com.ironhack.midterm.project.model.users.AccountHolder;
 
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -10,7 +8,6 @@ import javax.persistence.Enumerated;
 import javax.persistence.PrimaryKeyJoinColumn;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
-import java.time.LocalDate;
 
 @Entity
 @PrimaryKeyJoinColumn(name = "id")

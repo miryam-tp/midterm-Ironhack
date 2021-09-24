@@ -2,7 +2,6 @@ package com.ironhack.midterm.project.classes;
 
 import com.ironhack.midterm.project.enums.Status;
 import com.ironhack.midterm.project.model.account.*;
-import com.ironhack.midterm.project.model.users.ThirdParty;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 

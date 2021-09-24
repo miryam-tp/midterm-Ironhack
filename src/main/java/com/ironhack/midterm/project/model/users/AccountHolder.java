@@ -1,19 +1,14 @@
 package com.ironhack.midterm.project.model.users;
 
 import com.ironhack.midterm.project.classes.Address;
-import com.ironhack.midterm.project.model.account.Account;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDate;
-import java.util.List;
 
 @Entity
 @PrimaryKeyJoinColumn(name = "id")
 public class AccountHolder extends User {
-//    @Id
-//    @GeneratedValue(strategy = GenerationType.IDENTITY)
-//    private Long id;
     @NotNull
     private LocalDate dateOfBirth;
     @Embedded

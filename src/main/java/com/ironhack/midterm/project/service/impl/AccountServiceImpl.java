@@ -319,7 +319,7 @@ public class AccountServiceImpl implements AccountService {
             //Calculate new balance after transaction
             //If amount is positive, the third party transfers money
             //If amount is negative, the third party receives money
-            Money newBalance = new Money(savings.getBalance().getAmount().add(transferDto.getAmount()));
+            Money newBalance = new Money(savings.getBalance().getAmount().add(transferAmount));
 
             //Check if balance is lower than minimum balance after transaction
             if(savings.getMinimumBalance().getAmount().compareTo(newBalance.getAmount()) > 0)
@@ -339,7 +339,7 @@ public class AccountServiceImpl implements AccountService {
             //Calculate new balance after transaction
             //If amount is positive, third party transfers money
             //If amount is negative, third party receives money
-            Money newBalance = new Money(checkingAccount.getBalance().getAmount().add(transferDto.getAmount()));
+            Money newBalance = new Money(checkingAccount.getBalance().getAmount().add(transferAmount));
 
             //Check if balance is lower than minimum balance after transaction
             if(checkingAccount.getMinimumBalance().getAmount().compareTo(newBalance.getAmount()) > 0)
@@ -358,7 +358,8 @@ public class AccountServiceImpl implements AccountService {
             //Calculate new balance after transaction
             //If amount is negative, third party receives money
             //If amount is positive, third party transfers money
-            Money newBalance = new Money(studentChecking.getBalance().getAmount().add(transferDto.getAmount()));
+//            studentChecking.getBalance().increaseAmount(transferAmount);
+            Money newBalance = new Money(studentChecking.getBalance().getAmount().add(transferAmount));
 
             studentChecking.setBalance(newBalance);
             studentCheckingRepository.save(studentChecking);
@@ -373,7 +374,7 @@ public class AccountServiceImpl implements AccountService {
         }
         if(fraudDetector.getCurrentDayTransactions().compareTo(fraudDetector.getMaxDailyAmount()) > 0)
             fraudDetector.setMaxDailyAmount(fraudDetector.getCurrentDayTransactions());
-        fraudDetector.setLastTransactionAmount(new Money(transferDto.getAmount()));
+        fraudDetector.setLastTransactionAmount(new Money(transferAmount));
         fraudDetector.setLastTransactionTime(LocalDateTime.now());
         accountRepository.save(account);
     }
@@ -410,7 +411,7 @@ public class AccountServiceImpl implements AccountService {
 
         //Check origin account's funds
         if(!(originAccount instanceof CreditCard)) {
-            if(originAccount.getBalance().getAmount().compareTo(transferDto.getAmount()) < 0)
+            if(originAccount.getBalance().getAmount().compareTo(transferAmount) < 0)
                 throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Insufficient funds in origin account");
         }
 
@@ -418,9 +419,9 @@ public class AccountServiceImpl implements AccountService {
         BigDecimal newBalance;
         if(targetAccount instanceof CreditCard) {
             //Transferring money to a credit card account decreases its balance
-            newBalance = targetAccount.getBalance().getAmount().subtract(transferDto.getAmount());
+            newBalance = targetAccount.getBalance().getAmount().subtract(transferAmount);
         } else {
-            newBalance = targetAccount.getBalance().getAmount().add(transferDto.getAmount());
+            newBalance = targetAccount.getBalance().getAmount().add(transferAmount);
         }
         targetAccount.setBalance(new Money(newBalance));
         accountRepository.save(targetAccount);
@@ -428,16 +429,16 @@ public class AccountServiceImpl implements AccountService {
         //Process the transfer in the origin account
         if(originAccount instanceof CreditCard) {
             //Transferring money from a credit card account will increase its balance
-            newBalance = originAccount.getBalance().getAmount().add(transferDto.getAmount());
+            newBalance = originAccount.getBalance().getAmount().add(transferAmount);
 
             //Check if new balance is higher than the account's credit limit
             if(newBalance.compareTo(((CreditCard) originAccount).getCreditLimit().getAmount()) > 0)
                 newBalance = newBalance.add(((CreditCard) originAccount).getPenaltyFee().getAmount());
         } else if (originAccount instanceof StudentChecking){
             //Student Checking accounts do not have minimum balance
-            newBalance = originAccount.getBalance().getAmount().subtract(transferDto.getAmount());
+            newBalance = originAccount.getBalance().getAmount().subtract(transferAmount);
         } else if (originAccount instanceof Savings){
-            newBalance = originAccount.getBalance().getAmount().subtract(transferDto.getAmount());
+            newBalance = originAccount.getBalance().getAmount().subtract(transferAmount);
 
             //Check if new balance is lower than minimum balance
             if(newBalance.compareTo(((Savings) originAccount).getMinimumBalance().getAmount()) < 0)
@@ -454,13 +455,13 @@ public class AccountServiceImpl implements AccountService {
         FraudDetector fraudDetector = originAccount.getFraudDetector();
         originAccount.setBalance(new Money(newBalance));
         if(fraudDetector.getLastTransactionTime().toLocalDate().isEqual(LocalDate.now())) {
-            fraudDetector.setCurrentDayTransactions(fraudDetector.getCurrentDayTransactions().add(transferDto.getAmount()));
+            fraudDetector.setCurrentDayTransactions(fraudDetector.getCurrentDayTransactions().add(transferAmount));
         } else {
             fraudDetector.setCurrentDayTransactions(transferDto.getAmount());
         }
         if(fraudDetector.getCurrentDayTransactions().compareTo(fraudDetector.getMaxDailyAmount()) > 0)
             fraudDetector.setMaxDailyAmount(fraudDetector.getCurrentDayTransactions());
-        fraudDetector.setLastTransactionAmount(new Money(transferDto.getAmount()));
+        fraudDetector.setLastTransactionAmount(new Money(transferAmount));
         fraudDetector.setLastTransactionTime(LocalDateTime.now());
         accountRepository.save(originAccount);
     }

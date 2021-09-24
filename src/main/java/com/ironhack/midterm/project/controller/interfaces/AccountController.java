@@ -5,7 +5,6 @@ import com.ironhack.midterm.project.controller.dto.BalanceDTO;
 import com.ironhack.midterm.project.controller.dto.TransferDTO;
 import com.ironhack.midterm.project.model.account.Account;
 
-import java.util.List;
 import java.util.Optional;
 
 public interface AccountController {

@@ -15,7 +15,7 @@ public abstract class User {
 
     @ManyToOne
     @JoinColumn(name = "role_id")
-    private Role role; //Cannot be not null because third party users will not have a role
+    private Role role;        //Cannot be not null because third party users will not have a role
 
     public User() {
     }

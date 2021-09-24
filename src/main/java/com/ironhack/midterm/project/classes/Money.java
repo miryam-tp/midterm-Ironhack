@@ -41,6 +41,7 @@ public class Money {
         this(amount, EUR, DEFAULT_ROUNDING);
     }
 
+    //TODO: Implement these methods to increase and decrease Money amounts
     public BigDecimal increaseAmount(Money money) {
         setAmount(this.amount.add(money.amount));
         return this.amount;

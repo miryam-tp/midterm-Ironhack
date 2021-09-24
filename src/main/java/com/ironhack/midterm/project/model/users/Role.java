@@ -1,7 +1,6 @@
 package com.ironhack.midterm.project.model.users;
 
 import javax.persistence.*;
-import java.util.List;
 
 @Entity
 public class Role {
@@ -9,9 +8,6 @@ public class Role {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name;
-
-//    @OneToMany(mappedBy = "role", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
-//    private List<User> users;
 
     public Role() {
     }
@@ -36,11 +32,4 @@ public class Role {
         this.name = name;
     }
 
-//    public List<User> getUser() {
-//        return users;
-//    }
-//
-//    public void setUser(List<User> users) {
-//        this.users = users;
-//    }
 }

@@ -37,10 +37,6 @@ public class CheckingAccount extends Account {
     @NotNull
     private Status status;
 
-
-//    public CheckingAccount() { }
-
-
     public Money getMonthlyMaintenanceFee() {
         return monthlyMaintenanceFee;
     }
