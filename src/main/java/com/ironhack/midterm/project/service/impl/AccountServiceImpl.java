@@ -326,17 +326,7 @@ public class AccountServiceImpl implements AccountService {
                 newBalance = new Money(newBalance.getAmount().subtract(savings.getPenaltyFee().getAmount()));  //Apply penalty fee
 
             //Update fraud detector and save new balance
-            FraudDetector fraudDetector = savings.getFraudDetector();
             savings.setBalance(newBalance);
-            if(fraudDetector.getLastTransactionTime().toLocalDate().isEqual(LocalDate.now())) {
-                fraudDetector.setCurrentDayTransactions(fraudDetector.getCurrentDayTransactions().add(transferDto.getAmount().abs()));
-            } else {
-                fraudDetector.setCurrentDayTransactions(transferDto.getAmount());
-            }
-            if(fraudDetector.getCurrentDayTransactions().compareTo(fraudDetector.getMaxDailyAmount()) > 0)
-                fraudDetector.setMaxDailyAmount(fraudDetector.getCurrentDayTransactions());
-            fraudDetector.setLastTransactionAmount(new Money(transferDto.getAmount()));
-            fraudDetector.setLastTransactionTime(LocalDateTime.now());
             savingsRepository.save(savings);
         }
         else if(account instanceof CheckingAccount) {
@@ -355,18 +345,7 @@ public class AccountServiceImpl implements AccountService {
             if(checkingAccount.getMinimumBalance().getAmount().compareTo(newBalance.getAmount()) > 0)
                 newBalance = new Money(newBalance.getAmount().subtract(checkingAccount.getPenaltyFee().getAmount()));  //Apply penalty fee
 
-            //Update fraud detector and save new balance
-            FraudDetector fraudDetector = checkingAccount.getFraudDetector();
             checkingAccount.setBalance(newBalance);
-            if(fraudDetector.getLastTransactionTime().toLocalDate().isEqual(LocalDate.now())) {
-                fraudDetector.setCurrentDayTransactions(fraudDetector.getCurrentDayTransactions().add(transferDto.getAmount().abs()));
-            } else {
-                fraudDetector.setCurrentDayTransactions(transferDto.getAmount());
-            }
-            if(fraudDetector.getCurrentDayTransactions().compareTo(fraudDetector.getMaxDailyAmount()) > 0)
-                fraudDetector.setMaxDailyAmount(fraudDetector.getCurrentDayTransactions());
-            fraudDetector.setLastTransactionAmount(new Money(transferDto.getAmount()));
-            fraudDetector.setLastTransactionTime(LocalDateTime.now());
             checkingAccountRepository.save(checkingAccount);
         }
         else if(account instanceof StudentChecking) {
@@ -381,19 +360,22 @@ public class AccountServiceImpl implements AccountService {
             //If amount is positive, third party transfers money
             Money newBalance = new Money(studentChecking.getBalance().getAmount().add(transferDto.getAmount()));
 
-            FraudDetector fraudDetector = studentChecking.getFraudDetector();
             studentChecking.setBalance(newBalance);
-            if(fraudDetector.getLastTransactionTime().toLocalDate().isEqual(LocalDate.now())) {
-                fraudDetector.setCurrentDayTransactions(fraudDetector.getCurrentDayTransactions().add(transferDto.getAmount().abs()));
-            } else {
-                fraudDetector.setCurrentDayTransactions(transferDto.getAmount());
-            }
-            if(fraudDetector.getCurrentDayTransactions().compareTo(fraudDetector.getMaxDailyAmount()) > 0)
-                fraudDetector.setMaxDailyAmount(fraudDetector.getCurrentDayTransactions());
-            fraudDetector.setLastTransactionAmount(new Money(transferDto.getAmount()));
-            fraudDetector.setLastTransactionTime(LocalDateTime.now());
             studentCheckingRepository.save(studentChecking);
         }
+
+        //Update the account's fraud detector
+        FraudDetector fraudDetector = account.getFraudDetector();
+        if(fraudDetector.getLastTransactionTime().toLocalDate().isEqual(LocalDate.now())) {
+            fraudDetector.setCurrentDayTransactions(fraudDetector.getCurrentDayTransactions().add(transferDto.getAmount().abs()));
+        } else {
+            fraudDetector.setCurrentDayTransactions(transferDto.getAmount());
+        }
+        if(fraudDetector.getCurrentDayTransactions().compareTo(fraudDetector.getMaxDailyAmount()) > 0)
+            fraudDetector.setMaxDailyAmount(fraudDetector.getCurrentDayTransactions());
+        fraudDetector.setLastTransactionAmount(new Money(transferDto.getAmount()));
+        fraudDetector.setLastTransactionTime(LocalDateTime.now());
+        accountRepository.save(account);
     }
 
     public void transferMoney(TransferDTO transferDto) {

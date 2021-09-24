@@ -33,6 +33,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -150,7 +151,7 @@ class AccountControllerImplTest {
         checkingAccount.setPenaltyFee(new Money(new BigDecimal("40")));
         checkingAccount.setSecretKey("29837");
         checkingAccount.setStatus(Status.ACTIVE);
-        checkingAccount.setFraudDetector(new FraudDetector(new BigDecimal("0"), new BigDecimal("0")));
+        checkingAccount.setFraudDetector(new FraudDetector(LocalDateTime.now().minusDays(3), new Money(new BigDecimal("0")), new BigDecimal("0"), new BigDecimal("0")));
         checkingAccountRepository.save(checkingAccount);
 
         studentChecking = new StudentChecking();
@@ -160,7 +161,7 @@ class AccountControllerImplTest {
         studentChecking.setLastAccessed(LocalDate.now());
         studentChecking.setSecretKey("AB$334");
         studentChecking.setStatus(Status.ACTIVE);
-        studentChecking.setFraudDetector(new FraudDetector(new BigDecimal("0"), new BigDecimal("0")));
+        studentChecking.setFraudDetector(new FraudDetector(LocalDateTime.now().minusDays(3), new Money(new BigDecimal("0")), new BigDecimal("0"), new BigDecimal("0")));
         studentCheckingRepository.save(studentChecking);
 
         creditCard = new CreditCard();
@@ -171,7 +172,7 @@ class AccountControllerImplTest {
         creditCard.setInterestRate(new InterestRate(new BigDecimal("0.12")));
         creditCard.setCreditLimit(new Money(new BigDecimal("4000")));
         creditCard.setPenaltyFee(new Money(new BigDecimal("40")));
-        creditCard.setFraudDetector(new FraudDetector(new BigDecimal("0"), new BigDecimal("0")));
+        creditCard.setFraudDetector(new FraudDetector(LocalDateTime.now().minusDays(3), new Money(new BigDecimal("0")), new BigDecimal("0"), new BigDecimal("0")));
         creditCardRepository.save(creditCard);
 
         savings = new Savings();
@@ -184,8 +185,21 @@ class AccountControllerImplTest {
         savings.setPenaltyFee(new Money(new BigDecimal("40")));
         savings.setMinimumBalance(new Money(new BigDecimal("1000")));
         savings.setInterestRate(new InterestRate(new BigDecimal("0.2")));
-        savings.setFraudDetector(new FraudDetector(new BigDecimal("0"), new BigDecimal("0")));
+        savings.setFraudDetector(new FraudDetector(LocalDateTime.now().minusDays(3), new Money(new BigDecimal("0")), new BigDecimal("0"), new BigDecimal("0")));
         savingsRepository.save(savings);
+    }
+
+    @AfterAll
+    void tearDown() {
+        thirdPartyRepository.deleteAll();
+        adminRepository.deleteAll();
+        checkingAccountRepository.deleteAll();
+        studentCheckingRepository.deleteAll();
+        creditCardRepository.deleteAll();
+        savingsRepository.deleteAll();
+        accountRepository.deleteAll();
+        userRepository.deleteAll();
+        roleRepository.deleteAll();
     }
 
     //region getBalance tests

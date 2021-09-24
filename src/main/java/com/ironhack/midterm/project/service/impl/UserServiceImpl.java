@@ -52,7 +52,7 @@ public class UserServiceImpl implements UserService {
             if(userDto.getMailingAddress() != null) accountHolder.setMailingAddress(userDto.getMailingAddress());
             else throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
 
-            accountHolder.setRole(roleRepository.findById(1L).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Role not found")));
+            accountHolder.setRole(roleRepository.findDistinctByName("ACCOUNTHOLDER").orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Role not found")));
 
             return accountHolderRepository.save(accountHolder);
         }

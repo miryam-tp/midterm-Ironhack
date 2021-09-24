@@ -65,6 +65,7 @@ class FraudDetectorTest {
     @Test
     void checkTransaction_NotFraudulent_AccountStaysActive() {
         checkingAccount.setStatus(Status.ACTIVE);
+        checkingAccount.setFraudDetector(new FraudDetector(LocalDateTime.now().minusHours(2), new Money(new BigDecimal("50")), new BigDecimal("500.50"), new BigDecimal("200")));
         checkingAccountRepository.save(checkingAccount);
         FraudDetector.checkTransaction(checkingAccount, new BigDecimal("20.99"));
         assertEquals(Status.ACTIVE, checkingAccount.getStatus());
@@ -129,15 +130,14 @@ class FraudDetectorTest {
     }
 
     @Test
-    void lastTransactionLessThanOneSecondAgo_TwoSecondsAgo_ReturnFalse() {
-        FraudDetector fraudDetector = checkingAccount.getFraudDetector();
-        fraudDetector.setLastTransactionTime(LocalDateTime.of(currentDate, twoSecondsAgoTime));
+    void isLastTransactionLessThanOneSecondAgo_TwoSecondsAgo_ReturnFalse() {
+        checkingAccount.getFraudDetector().setLastTransactionTime(LocalDateTime.now().minusSeconds(2));
         checkingAccountRepository.save(checkingAccount);
         assertFalse(fraudDetector.isLastTransactionLessThanOneSecondAgo());
     }
 
     @Test
-    void lastTransactionLessThanOneSecondAgo_LessThanOneSecondAgo_ReturnTrue() {
+    void isLastTransactionLessThanOneSecondAgo_LessThanOneSecondAgo_ReturnTrue() {
         FraudDetector fraudDetector = checkingAccount.getFraudDetector();
         fraudDetector.setLastTransactionTime(LocalDateTime.now());
         checkingAccountRepository.save(checkingAccount);

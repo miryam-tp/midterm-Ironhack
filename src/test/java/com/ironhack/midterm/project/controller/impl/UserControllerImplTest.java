@@ -6,6 +6,7 @@ import com.ironhack.midterm.project.controller.dto.UserDTO;
 import com.ironhack.midterm.project.model.users.Admin;
 import com.ironhack.midterm.project.model.users.Role;
 import com.ironhack.midterm.project.repository.*;
+import org.aspectj.lang.annotation.After;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -77,6 +78,15 @@ class UserControllerImplTest {
         admin.setPassword(passwordEncoder.encode("123456"));
         admin.setRole(roleAdmin);
         adminRepository.save(admin);
+    }
+
+    @AfterAll
+    void tearDown() {
+        adminRepository.deleteAll();
+        thirdPartyRepository.deleteAll();
+        accountHolderRepository.deleteAll();
+        userRepository.deleteAll();
+        roleRepository.deleteAll();
     }
 
     @Test

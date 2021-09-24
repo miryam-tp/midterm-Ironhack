@@ -122,7 +122,7 @@ public class FraudDetector {
                     if(this.lastTransactionTime.toLocalTime().getSecond() == LocalTime.now().getSecond())
                         return true;
                         //If second is smaller than current transaction second, we have to check nanoseconds
-                    else if(this.lastTransactionTime.toLocalTime().getSecond() < LocalTime.now().getSecond()) {
+                    else if(LocalTime.now().getSecond() - this.lastTransactionTime.toLocalTime().getSecond() <= 1) {
                         //If nanoseconds in last transaction are bigger than current transaction nanos, the last transaction was less than one second ago
                         if(this.lastTransactionTime.toLocalTime().getNano() > LocalTime.now().getNano())
                             return true;
