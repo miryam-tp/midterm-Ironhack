@@ -1,7 +1,7 @@
-#💲Banking System
-###_Ironhack Bootcamp Midterm Project_
+#💲 Banking System
+### _Ironhack Bootcamp Midterm Project_
 
-##📌Features
+## 📌Features
 
 -[x] **Register three types of user to access basic functionalities:**
     * Admin, third party and account holders
@@ -14,7 +14,7 @@
 -[x] **Fraud detection**
 -[x] **Data persistence**
 
-##📋Tech
+## 📋Tech
 
 * _SpringBoot_
 * _Spring Data JPA_
@@ -58,22 +58,22 @@ Third party users need to be registered in the database by an admin, but they do
 Therefore, the UserDTO when registering a third party user does not need a password. However, it will need a hashed key that must be
 provided as a header in the requests they make.
 
-##💬Diagrams
+## 💬Diagrams
 You can find all the diagrams in the [diagrams](diagrams) folder.
-###Use Case Diagram
+### Use Case Diagram
 ![image](diagrams/Midterm%20Project-Use%20Case%20Diagram.jpg)
-###Class diagram
+### Class diagram
 ![image](diagrams/Midterm%20Project-Class%20Diagram.jpg)
-###Database structure
+### Database structure
 ![image](diagrams/database-diagram.png)
 
-##🔜What's next?
+## 🔜What's next?
 Some things I would like to improve in this project:
 - Transaction persistence in the database
 - Better fraud detection
 - Better Money class implementation
 
-##✨Thanks
+## ✨Thanks
 This project was developed in two weeks as part of the Ironhack Bootcamp.
 This would not be possible without the help and dedication of the teacher and TAs. Thank you! ♥
 #### IH ES WDPT - JUN21 - BECAS SANTANDER TECH
