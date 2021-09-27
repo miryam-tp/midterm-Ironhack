@@ -9,6 +9,7 @@ import com.ironhack.midterm.project.repository.RoleRepository;
 import com.ironhack.midterm.project.repository.ThirdPartyRepository;
 import com.ironhack.midterm.project.service.interfaces.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,7 @@ public class UserServiceImpl implements UserService {
     private RoleRepository roleRepository;
 
     @Autowired
+    @Lazy
     private PasswordEncoder passwordEncoder;
 
     public User store(UserDTO userDto) {
@@ -48,7 +50,7 @@ public class UserServiceImpl implements UserService {
 
             if(userDto.getDateOfBirth() != null){
                 String[] dateFromString = userDto.getDateOfBirth().split("-");
-                LocalDate date = LocalDate.of(Integer.valueOf(dateFromString[2]), Integer.valueOf(dateFromString[1]), Integer.valueOf(dateFromString[0]));
+                LocalDate date = LocalDate.of(Integer.parseInt(dateFromString[2]), Integer.parseInt(dateFromString[1]), Integer.parseInt(dateFromString[0]));
                 accountHolder.setDateOfBirth(date);
             }
             else throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Date of birth cannot be empty");

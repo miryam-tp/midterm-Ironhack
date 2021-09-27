@@ -1,6 +1,6 @@
 -- RUN IN ROOT (change 'ironhacker' to match your own local user):
--- GRANT ALL PRIVILEGES ON midterm.* TO 'ironhacker'@'localhost';
--- GRANT ALL PRIVILEGES ON midterm_test.* TO 'ironhacker'@'localhost';
+-- GRANT ALL PRIVILEGES ON banking.* TO 'ironhacker'@'localhost';
+-- GRANT ALL PRIVILEGES ON banking_test.* TO 'ironhacker'@'localhost';
 
 -- RUN IN LOCAL USER:
 -- DROP TABLE STATEMENTS

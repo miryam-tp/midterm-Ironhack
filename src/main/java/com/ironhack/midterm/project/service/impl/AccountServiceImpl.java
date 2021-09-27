@@ -62,7 +62,7 @@ public class AccountServiceImpl implements AccountService {
         }
 
         BalanceDTO balance = new BalanceDTO();
-        BigDecimal currentBalance = account.getBalance().getAmount();
+//        BigDecimal currentBalance = account.getBalance().getAmount();
 
         if(account instanceof Savings) {
             Savings savings = savingsRepository.findById(id).get();
@@ -75,12 +75,14 @@ public class AccountServiceImpl implements AccountService {
 
                 //For each year passed since the last time the account was accessed, we apply the interest rate
                 for (int i = 0; i < yearsPassed ; i++) {
-                    BigDecimal fees = currentBalance.multiply(interest);  //Calculates fees
-                    currentBalance = currentBalance.add(fees);  //Applies fees
+//                    BigDecimal fees = currentBalance.multiply(interest);  //Calculates fees
+//                    currentBalance = currentBalance.add(fees);  //Applies fees
+                    BigDecimal fees = savings.getBalance().getAmount().multiply(interest);
+                    savings.getBalance().increaseAmount(fees);
                 }
 
                 savings.setLastAccessed(LocalDate.now());
-                savings.setBalance(new Money(currentBalance));
+//                savings.setBalance(new Money(currentBalance));
                 savingsRepository.save(savings);
             }
         } else if(account instanceof CreditCard) {
@@ -98,12 +100,14 @@ public class AccountServiceImpl implements AccountService {
 
                 //For each month passed since the last time the account was accessed, we apply the interest rate
                 for(int i = 0; i < monthsPassed; i++) {
-                    BigDecimal fees = currentBalance.multiply(monthlyInterest);
-                    currentBalance = currentBalance.add(fees);
+//                    BigDecimal fees = currentBalance.multiply(monthlyInterest);
+//                    currentBalance = currentBalance.add(fees);
+                    BigDecimal fees = creditCard.getBalance().getAmount().multiply(monthlyInterest);
+                    creditCard.getBalance().increaseAmount(fees);
                 }
 
                 creditCard.setLastAccessed(LocalDate.now());
-                creditCard.setBalance(new Money(currentBalance));
+//                creditCard.setBalance(new Money(currentBalance));
                 creditCardRepository.save(creditCard);
             }
         } else if(account instanceof CheckingAccount) {
@@ -120,15 +124,17 @@ public class AccountServiceImpl implements AccountService {
 
                 //For each month passed since the last time the account was accessed, we subtract the monthly maintenance fee
                 for(int i = 0; i < monthsPassed; i++)
-                    currentBalance = currentBalance.subtract(monthlyFee);
+                    checkingAccount.getBalance().decreaseAmount(monthlyFee);
+//                    currentBalance = currentBalance.subtract(monthlyFee);
 
                 checkingAccount.setLastAccessed(LocalDate.now());
-                checkingAccount.setBalance(new Money(currentBalance));
+//                checkingAccount.setBalance(new Money(currentBalance));
                 checkingAccountRepository.save(checkingAccount);
             }
         }
 
-        balance.setAmount(currentBalance.setScale(2, RoundingMode.HALF_EVEN));
+        balance.setAmount(account.getBalance().getAmount().setScale(2, RoundingMode.HALF_EVEN));
+//        balance.setAmount(currentBalance.setScale(2, RoundingMode.HALF_EVEN));
         return balance;
     }
 
@@ -319,14 +325,16 @@ public class AccountServiceImpl implements AccountService {
             //Calculate new balance after transaction
             //If amount is positive, the third party transfers money
             //If amount is negative, the third party receives money
-            Money newBalance = new Money(savings.getBalance().getAmount().add(transferAmount));
+//            Money newBalance = new Money(savings.getBalance().getAmount().add(transferAmount));
+            savings.getBalance().increaseAmount(transferAmount);
 
             //Check if balance is lower than minimum balance after transaction
-            if(savings.getMinimumBalance().getAmount().compareTo(newBalance.getAmount()) > 0)
-                newBalance = new Money(newBalance.getAmount().subtract(savings.getPenaltyFee().getAmount()));  //Apply penalty fee
+            if(savings.getMinimumBalance().getAmount().compareTo(savings.getBalance().getAmount()) > 0)
+                savings.getBalance().decreaseAmount(savings.getPenaltyFee().getAmount());  //Apply penalty fee
+//                newBalance = new Money(newBalance.getAmount().subtract(savings.getPenaltyFee().getAmount()));
 
             //Update fraud detector and save new balance
-            savings.setBalance(newBalance);
+//            savings.setBalance(newBalance);
             savingsRepository.save(savings);
         }
         else if(account instanceof CheckingAccount) {
@@ -339,13 +347,15 @@ public class AccountServiceImpl implements AccountService {
             //Calculate new balance after transaction
             //If amount is positive, third party transfers money
             //If amount is negative, third party receives money
-            Money newBalance = new Money(checkingAccount.getBalance().getAmount().add(transferAmount));
+//            Money newBalance = new Money(checkingAccount.getBalance().getAmount().add(transferAmount));
+            checkingAccount.getBalance().increaseAmount(transferAmount);
 
             //Check if balance is lower than minimum balance after transaction
-            if(checkingAccount.getMinimumBalance().getAmount().compareTo(newBalance.getAmount()) > 0)
-                newBalance = new Money(newBalance.getAmount().subtract(checkingAccount.getPenaltyFee().getAmount()));  //Apply penalty fee
+            if(checkingAccount.getMinimumBalance().getAmount().compareTo(checkingAccount.getBalance().getAmount()) > 0)
+                checkingAccount.getBalance().decreaseAmount(checkingAccount.getPenaltyFee().getAmount());  //Apply penalty fee
+//                newBalance = new Money(newBalance.getAmount().subtract(checkingAccount.getPenaltyFee().getAmount()));
 
-            checkingAccount.setBalance(newBalance);
+//            checkingAccount.setBalance(newBalance);
             checkingAccountRepository.save(checkingAccount);
         }
         else if(account instanceof StudentChecking) {
@@ -358,10 +368,10 @@ public class AccountServiceImpl implements AccountService {
             //Calculate new balance after transaction
             //If amount is negative, third party receives money
             //If amount is positive, third party transfers money
-//            studentChecking.getBalance().increaseAmount(transferAmount);
-            Money newBalance = new Money(studentChecking.getBalance().getAmount().add(transferAmount));
+//            Money newBalance = new Money(studentChecking.getBalance().getAmount().add(transferAmount));
+            studentChecking.getBalance().increaseAmount(transferAmount);
 
-            studentChecking.setBalance(newBalance);
+//            studentChecking.setBalance(newBalance);
             studentCheckingRepository.save(studentChecking);
         }
 
@@ -416,44 +426,48 @@ public class AccountServiceImpl implements AccountService {
         }
 
         //Process the transfer in the target account
-        BigDecimal newBalance;
+//        BigDecimal newBalance;
         if(targetAccount instanceof CreditCard) {
             //Transferring money to a credit card account decreases its balance
-            newBalance = targetAccount.getBalance().getAmount().subtract(transferAmount);
+//            newBalance = targetAccount.getBalance().getAmount().subtract(transferAmount);
+            targetAccount.getBalance().decreaseAmount(transferAmount);
         } else {
-            newBalance = targetAccount.getBalance().getAmount().add(transferAmount);
+//            newBalance = targetAccount.getBalance().getAmount().add(transferAmount);
+            targetAccount.getBalance().increaseAmount(transferAmount);
         }
-        targetAccount.setBalance(new Money(newBalance));
+//        targetAccount.setBalance(new Money(newBalance));
         accountRepository.save(targetAccount);
 
         //Process the transfer in the origin account
+        Money accountBalance = originAccount.getBalance();
         if(originAccount instanceof CreditCard) {
             //Transferring money from a credit card account will increase its balance
-            newBalance = originAccount.getBalance().getAmount().add(transferAmount);
+//            newBalance = originAccount.getBalance().getAmount().add(transferAmount);
+            accountBalance.increaseAmount(transferAmount);
 
             //Check if new balance is higher than the account's credit limit
-            if(newBalance.compareTo(((CreditCard) originAccount).getCreditLimit().getAmount()) > 0)
-                newBalance = newBalance.add(((CreditCard) originAccount).getPenaltyFee().getAmount());
+            if(accountBalance.getAmount().compareTo(((CreditCard) originAccount).getCreditLimit().getAmount()) > 0)
+                accountBalance.increaseAmount(((CreditCard) originAccount).getPenaltyFee().getAmount());
         } else if (originAccount instanceof StudentChecking){
             //Student Checking accounts do not have minimum balance
-            newBalance = originAccount.getBalance().getAmount().subtract(transferAmount);
+            accountBalance.decreaseAmount(transferAmount);
         } else if (originAccount instanceof Savings){
-            newBalance = originAccount.getBalance().getAmount().subtract(transferAmount);
+            accountBalance.decreaseAmount(transferAmount);
 
             //Check if new balance is lower than minimum balance
-            if(newBalance.compareTo(((Savings) originAccount).getMinimumBalance().getAmount()) < 0)
-                newBalance = newBalance.add(((Savings) originAccount).getPenaltyFee().getAmount());
+            if(accountBalance.getAmount().compareTo(((Savings) originAccount).getMinimumBalance().getAmount()) < 0)
+                accountBalance.decreaseAmount(((Savings) originAccount).getPenaltyFee().getAmount());
         } else if (originAccount instanceof CheckingAccount) {
-            newBalance = originAccount.getBalance().getAmount().subtract(transferDto.getAmount());
+            accountBalance.decreaseAmount(transferAmount);
 
             //Check if new balance is lower than minimum balance
-            if(newBalance.compareTo(((CheckingAccount) originAccount).getMinimumBalance().getAmount()) < 0)
-                newBalance = newBalance.subtract(((CheckingAccount) originAccount).getPenaltyFee().getAmount());
+            if(accountBalance.getAmount().compareTo(((CheckingAccount) originAccount).getMinimumBalance().getAmount()) < 0)
+                accountBalance.decreaseAmount(((CheckingAccount) originAccount).getPenaltyFee().getAmount());
         }
 
         //Update fraud detector and save the updated balance
         FraudDetector fraudDetector = originAccount.getFraudDetector();
-        originAccount.setBalance(new Money(newBalance));
+//        originAccount.setBalance(new Money(newBalance));
         if(fraudDetector.getLastTransactionTime().toLocalDate().isEqual(LocalDate.now())) {
             fraudDetector.setCurrentDayTransactions(fraudDetector.getCurrentDayTransactions().add(transferAmount));
         } else {
